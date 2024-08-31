@@ -1,0 +1,4 @@
+[submodule "OpenSTA"]
+	path = OpenSTA
+	url = git@github.com:The-OpenROAD-Project/OpenSTA.git
+	branch = master
