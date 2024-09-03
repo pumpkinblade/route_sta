@@ -7,15 +7,14 @@
 static int lefMacroBeginCbk(lefrCallbackType_e, const char *name,
                             lefiUserData data) {
   LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
-  db->currentLibcell = LefLibcell(name);
+  db->current_lef_libcell = LefLibcell(name);
   return 0;
 }
 
 static int lefMacroEndCbk(lefrCallbackType_e, const char *name,
                           lefiUserData data) {
   LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
-  db->libcellNameMap.emplace(std::string(db->currentLibcell.name),
-                             db->currentLibcell);
+  db->lef_libcells.push_back(db->current_lef_libcell);
   return 0;
 }
 
@@ -27,26 +26,21 @@ static int lefPinCbk(lefrCallbackType_e, lefiPin *pin, lefiUserData data) {
       dir = DIRECTION_OUTPUT;
     } else if (std::strcmp(pin->direction(), "INPUT") == 0) {
       dir = DIRECTION_INPUT;
-    } else if (std::strcmp(pin->direction(), "INOUT") == 0) {
-      dir = DIRECTION_INOUT;
     } else {
-      LOG_WARN("could recognize the direction of `%s.%s` ",
-               db->currentLibcell.name.c_str(), pin->name());
+      dir = DIRECTION_INOUT;
     }
   } else {
-    LOG_WARN("`%s.%s` does not have direction", db->currentLibcell.name.c_str(),
-             pin->name());
+    LOG_WARN("`%s.%s` does not have direction",
+             db->current_lef_libcell.name.c_str(), pin->name());
   }
-  db->currentLibcell.libpinNameMap.emplace(std::string(pin->name()),
-                                           LefLibpin(pin->name()));
+  db->current_lef_libcell.libpins.emplace_back(pin->name());
   return 0;
 }
 
 static int defComponentCbk(defrCallbackType_e, defiComponent *comp,
                            defiUserData data) {
   LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
-  db->cellNameMap.emplace(std::string(comp->id()),
-                          DefCell(comp->name(), comp->macroName()));
+  db->def_cells.emplace_back(comp->id(), comp->name());
   return 0;
 }
 
@@ -66,23 +60,22 @@ static int defPinCbk(defrCallbackType_e, defiPin *pin, defiUserData data) {
   } else {
     LOG_WARN("`PIN.%s` does not have direction", pin->pinName());
   }
-  db->ioPinNameMap.emplace(std::string(pin->pinName()),
-                           DefIOPin(pin->pinName(), dir));
+  db->def_io_pins.emplace_back(pin->pinName(), dir);
   return 0;
 }
 
 static int defNetCbk(defrCallbackType_e, defiNet *net, defiUserData data) {
   LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
-  DefNet iNet(net->name());
+  DefNet n(net->name());
   for (int i = 0; i < net->numConnections(); i++) {
     if (std::strcmp(net->instance(i), "PIN") == 0) { // io pin
-      iNet.ioPins.emplace_back(std::string(net->pin(i)));
+      n.io_pins.emplace_back(std::string(net->pin(i)));
     } else {
-      iNet.internalPins.emplace_back(std::string(net->instance(i)),
-                                     std::string(net->pin(i)));
+      n.internal_pins.emplace_back(std::string(net->instance(i)),
+                                   std::string(net->pin(i)));
     }
   }
-  db->netNameMap.emplace(std::string(net->name()), iNet);
+  db->def_nets.push_back(n);
   return 0;
 }
 

@@ -2,7 +2,6 @@
 #define __LEF_DEF_DATABASE_HPP__
 
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 enum { DIRECTION_INOUT, DIRECTION_INPUT, DIRECTION_OUTPUT };
@@ -18,7 +17,7 @@ struct LefLibpin {
 
 struct LefLibcell {
   std::string name;
-  std::unordered_map<std::string, LefLibpin> libpinNameMap;
+  std::vector<LefLibpin> libpins;
 
   LefLibcell() = default;
   LefLibcell(const std::string &name) : name(name) {}
@@ -26,11 +25,11 @@ struct LefLibcell {
 
 struct DefCell {
   std::string name;
-  std::string libcellName;
+  std::string libcell_name;
 
   DefCell() = default;
-  DefCell(const std::string &name, const std::string &libcellName)
-      : name(name), libcellName(libcellName) {}
+  DefCell(const std::string &name, const std::string &libcell_name)
+      : name(name), libcell_name(libcell_name) {}
 };
 
 struct DefIOPin {
@@ -44,19 +43,19 @@ struct DefIOPin {
 
 struct DefNet {
   std::string name;
-  std::vector<std::pair<std::string, std::string>> internalPins;
-  std::vector<std::string> ioPins;
+  std::vector<std::pair<std::string, std::string>> internal_pins;
+  std::vector<std::string> io_pins;
 
   DefNet() = default;
   DefNet(const std::string &name) : name(name) {}
 };
 
 struct LefDefDatabase {
-  LefLibcell currentLibcell;
-  std::unordered_map<std::string, LefLibcell> libcellNameMap;
-  std::unordered_map<std::string, DefCell> cellNameMap;
-  std::unordered_map<std::string, DefNet> netNameMap;
-  std::unordered_map<std::string, DefIOPin> ioPinNameMap;
+  LefLibcell current_lef_libcell;
+  std::vector<LefLibcell> lef_libcells;
+  std::vector<DefIOPin> def_io_pins;
+  std::vector<DefCell> def_cells;
+  std::vector<DefNet> def_nets;
 
   void readLef(const char *file);
   void readDef(const char *file);
