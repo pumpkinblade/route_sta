@@ -10,7 +10,7 @@ public:
   ~LefDefReader() = default;
 
   bool read(const char *lef_file, const char *def_file);
-  sta::Instance *linkNetwork();
+  sta::Instance *linkNetwork(const char *top_cell_name);
 
   void makeLibcell(const LefLibcell *libcell);
 

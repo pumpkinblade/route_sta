@@ -1,6 +1,7 @@
 #ifndef __LEF_DEF_DATABASE_HPP__
 #define __LEF_DEF_DATABASE_HPP__
 
+#include <sta/Report.hh>
 #include <string>
 #include <vector>
 
@@ -53,12 +54,14 @@ struct DefNet {
 struct LefDefDatabase {
   LefLibcell current_lef_libcell;
   std::vector<LefLibcell> lef_libcells;
+
+  std::string def_design_name;
   std::vector<DefIOPin> def_io_pins;
   std::vector<DefCell> def_cells;
   std::vector<DefNet> def_nets;
 
-  void readLef(const char *file);
-  void readDef(const char *file);
+  void readLef(const char *file, sta::Report *report);
+  void readDef(const char *file, sta::Report *report);
 };
 
 #endif

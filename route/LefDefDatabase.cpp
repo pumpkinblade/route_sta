@@ -1,5 +1,4 @@
 #include "LefDefDatabase.hpp"
-#include "utils.hpp"
 #include <cstring>
 #include <defrReader.hpp>
 #include <lefrReader.hpp>
@@ -29,11 +28,15 @@ static int lefPinCbk(lefrCallbackType_e, lefiPin *pin, lefiUserData data) {
     } else {
       dir = DIRECTION_INOUT;
     }
-  } else {
-    LOG_WARN("`%s.%s` does not have direction",
-             db->current_lef_libcell.name.c_str(), pin->name());
   }
   db->current_lef_libcell.libpins.emplace_back(pin->name());
+  return 0;
+}
+
+static int defDesignCbk(defrCallbackType_e, const char *name,
+                        defiUserData data) {
+  LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
+  db->def_design_name = name;
   return 0;
 }
 
@@ -52,13 +55,9 @@ static int defPinCbk(defrCallbackType_e, defiPin *pin, defiUserData data) {
       dir = DIRECTION_OUTPUT;
     } else if (std::strcmp(pin->direction(), "INPUT") == 0) {
       dir = DIRECTION_INPUT;
-    } else if (std::strcmp(pin->direction(), "INOUT") == 0) {
-      dir = DIRECTION_INOUT;
     } else {
-      LOG_WARN("could recognize the direction of `PIN.%s` ", pin->pinName());
+      dir = DIRECTION_INOUT;
     }
-  } else {
-    LOG_WARN("`PIN.%s` does not have direction", pin->pinName());
   }
   db->def_io_pins.emplace_back(pin->pinName(), dir);
   return 0;
@@ -79,7 +78,7 @@ static int defNetCbk(defrCallbackType_e, defiNet *net, defiUserData data) {
   return 0;
 }
 
-void LefDefDatabase::readLef(const char *file) {
+void LefDefDatabase::readLef(const char *file, sta::Report *report) {
   lefrInit();
   lefrSetUserData(this);
   lefrSetMacroBeginCbk(lefMacroBeginCbk);
@@ -87,22 +86,35 @@ void LefDefDatabase::readLef(const char *file) {
   lefrSetPinCbk(lefPinCbk);
 
   FILE *stream = std::fopen(file, "r");
-  ASSERT(stream, "can't open %s", file);
+  if (stream == nullptr) {
+    report->error(70000, "can not open %s", file);
+    return;
+  }
   int res = lefrRead(stream, file, this);
   std::fclose(stream);
-  ASSERT(res == 0, "lefapi exit with %d", res);
+  if (res != 0) {
+    report->error(70000, "lefapi exit with %d", res);
+    return;
+  }
 }
 
-void LefDefDatabase::readDef(const char *file) {
+void LefDefDatabase::readDef(const char *file, sta::Report *report) {
   defrInit();
   defrSetUserData(this);
+  defrSetDesignCbk(defDesignCbk);
   defrSetComponentCbk(defComponentCbk);
   defrSetPinCbk(defPinCbk);
   defrSetNetCbk(defNetCbk);
 
   FILE *stream = std::fopen(file, "r");
-  ASSERT(stream, "can't open %s", file);
+  if (stream == nullptr) {
+    report->error(70000, "can not open %s", file);
+    return;
+  }
   int res = defrRead(stream, file, this, 1);
   std::fclose(stream);
-  ASSERT(res == 0, "lefapi exit with %d", res);
+  if (res != 0) {
+    report->error(70000, "defapi exit with %d", res);
+    return;
+  }
 }
