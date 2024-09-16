@@ -12,11 +12,7 @@ public:
   bool read(const char *lef_file, const char *def_file);
   sta::Instance *linkNetwork(const char *top_cell_name);
 
-  void makeLibcell(const LefLibcell *libcell);
-
 private:
-  void warn(int id, const char *fmt, ...);
-
   sta::Report *m_report;
   sta::Debug *m_debug;
   sta::NetworkReader *m_network;

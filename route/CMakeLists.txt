@@ -5,9 +5,12 @@ set(ROUTE_HOME ${CMAKE_CURRENT_SOURCE_DIR})
 ##################
 
 add_library(route
-  ${ROUTE_HOME}/LefDefDatabase.cpp
-  ${ROUTE_HOME}/LefDefReader.cpp
-  ${ROUTE_HOME}/RouteTcl.cpp
+  ${ROUTE_HOME}/app/App.cpp
+  ${ROUTE_HOME}/lefdef/LefDefDatabase.cpp
+  ${ROUTE_HOME}/object/GRContext.cpp
+  ${ROUTE_HOME}/timing/MakeWireParasitics.cpp
+  ${ROUTE_HOME}/tcl/RouteTcl.cpp
+  ${ROUTE_HOME}/util/log.cpp
 )
 
 target_link_libraries(route

@@ -26,7 +26,7 @@
 #endif
 
 #include "Sta.hh"
-#include "route/RouteTcl.hpp"
+#include "route/tcl/RouteTcl.hpp"
 
 namespace sta {
 extern const char *tcl_inits[];

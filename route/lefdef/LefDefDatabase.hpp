@@ -1,28 +1,11 @@
 #ifndef __LEF_DEF_DATABASE_HPP__
 #define __LEF_DEF_DATABASE_HPP__
 
-#include <sta/Report.hh>
+#include <memory>
 #include <string>
 #include <vector>
 
 enum { DIRECTION_INOUT, DIRECTION_INPUT, DIRECTION_OUTPUT };
-
-struct LefLibpin {
-  std::string name;
-  int direction;
-
-  LefLibpin() = default;
-  LefLibpin(const std::string &name) : name(name), direction(DIRECTION_INOUT) {}
-  LefLibpin(const std::string &name, int dir) : name(name), direction(dir) {}
-};
-
-struct LefLibcell {
-  std::string name;
-  std::vector<LefLibpin> libpins;
-
-  LefLibcell() = default;
-  LefLibcell(const std::string &name) : name(name) {}
-};
 
 struct DefCell {
   std::string name;
@@ -52,16 +35,13 @@ struct DefNet {
 };
 
 struct LefDefDatabase {
-  LefLibcell current_lef_libcell;
-  std::vector<LefLibcell> lef_libcells;
-
   std::string def_design_name;
   std::vector<DefIOPin> def_io_pins;
   std::vector<DefCell> def_cells;
   std::vector<DefNet> def_nets;
 
-  void readLef(const char *file, sta::Report *report);
-  void readDef(const char *file, sta::Report *report);
+  static std::shared_ptr<LefDefDatabase> read(const std::string &lef_file,
+                                              const std::string &def_file);
 };
 
 #endif

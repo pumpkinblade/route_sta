@@ -1,9 +1,12 @@
 read_liberty ./test/Nangate45_slow.lib
-# read_verilog ./test/gcd_nangate45.v
-read_lefdef ./test/Nangate45.lef ./test/gcd_nangate45.def
+read_verilog ./test/gcd_nangate45.v
+r_read_lefdef ./test/Nangate45.lef ./test/gcd_nangate45.def
 link_design gcd
+# write_verilog ./test/gcd_test.v
 create_clock [get_ports clk] -name core_clock -period 0.4850
-report_checks
+# report_checks -path_delay min_max
+r_write_slack ./test/slack.txt
+exit
 
 
 # Startpoint: _690_ (rising edge-triggered flip-flop clocked by core_clock)

@@ -2,36 +2,7 @@
 #include <cstring>
 #include <defrReader.hpp>
 #include <lefrReader.hpp>
-
-static int lefMacroBeginCbk(lefrCallbackType_e, const char *name,
-                            lefiUserData data) {
-  LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
-  db->current_lef_libcell = LefLibcell(name);
-  return 0;
-}
-
-static int lefMacroEndCbk(lefrCallbackType_e, const char *name,
-                          lefiUserData data) {
-  LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
-  db->lef_libcells.push_back(db->current_lef_libcell);
-  return 0;
-}
-
-static int lefPinCbk(lefrCallbackType_e, lefiPin *pin, lefiUserData data) {
-  LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
-  int dir = DIRECTION_INOUT;
-  if (pin->hasDirection()) {
-    if (std::strcmp(pin->direction(), "OUTPUT") == 0) {
-      dir = DIRECTION_OUTPUT;
-    } else if (std::strcmp(pin->direction(), "INPUT") == 0) {
-      dir = DIRECTION_INPUT;
-    } else {
-      dir = DIRECTION_INOUT;
-    }
-  }
-  db->current_lef_libcell.libpins.emplace_back(pin->name());
-  return 0;
-}
+#include <sta/Report.hh>
 
 static int defDesignCbk(defrCallbackType_e, const char *name,
                         defiUserData data) {
@@ -74,47 +45,52 @@ static int defNetCbk(defrCallbackType_e, defiNet *net, defiUserData data) {
                                    std::string(net->pin(i)));
     }
   }
+  for (int i = 0; i < net->numWires() && (db->def_nets.size() == 0); i++) {
+    defiWire *wire = net->wire(i);
+    for (int j = 0; j < wire->numPaths(); j++) {
+      defiPath *path = wire->path(j);
+      path->initTraverse();
+      for (int e; (e = path->next()) != DEFIPATH_DONE;) {
+        switch (e) {
+        case DEFIPATH_LAYER:
+          break;
+        case DEFIPATH_VIA:
+          break;
+        case DEFIPATH_POINT: {
+          int x, y;
+          path->getPoint(&x, &y);
+        } break;
+        default:
+          break;
+        }
+      }
+    }
+  }
   db->def_nets.push_back(n);
   return 0;
 }
 
-void LefDefDatabase::readLef(const char *file, sta::Report *report) {
-  lefrInit();
-  lefrSetUserData(this);
-  lefrSetMacroBeginCbk(lefMacroBeginCbk);
-  lefrSetMacroEndCbk(lefMacroEndCbk);
-  lefrSetPinCbk(lefPinCbk);
+std::shared_ptr<LefDefDatabase>
+LefDefDatabase::read(const std::string &lef_file, const std::string &def_file) {
+  auto db = std::make_shared<LefDefDatabase>();
 
-  FILE *stream = std::fopen(file, "r");
-  if (stream == nullptr) {
-    report->error(70000, "can not open %s", file);
-    return;
-  }
-  int res = lefrRead(stream, file, this);
-  std::fclose(stream);
-  if (res != 0) {
-    report->error(70000, "lefapi exit with %d", res);
-    return;
-  }
-}
-
-void LefDefDatabase::readDef(const char *file, sta::Report *report) {
+  // currently we dont need to read lef_file
   defrInit();
-  defrSetUserData(this);
+  defrSetAddPathToNet();
+  defrSetUserData(db.get());
   defrSetDesignCbk(defDesignCbk);
   defrSetComponentCbk(defComponentCbk);
   defrSetPinCbk(defPinCbk);
   defrSetNetCbk(defNetCbk);
-
-  FILE *stream = std::fopen(file, "r");
+  FILE *stream = std::fopen(def_file.c_str(), "r");
   if (stream == nullptr) {
-    report->error(70000, "can not open %s", file);
-    return;
+    return nullptr;
   }
-  int res = defrRead(stream, file, this, 1);
+  int res = defrRead(stream, def_file.c_str(), db.get(), 1);
   std::fclose(stream);
   if (res != 0) {
-    report->error(70000, "defapi exit with %d", res);
-    return;
+    return nullptr;
   }
+
+  return db;
 }
