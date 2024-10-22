@@ -1,6 +1,7 @@
 #ifndef __GR_PIN_HPP__
 #define __GR_PIN_HPP__
 
+#include "GRTree.hpp"
 #include <string>
 
 class GRInstance;
@@ -10,29 +11,33 @@ class GRPin {
 public:
   GRPin(const std::string &name) : m_name(name) {}
 
-  void setInstance(GRInstance *instance) { m_instance = instance; }
-  void setNet(GRNet *net) { m_net = net; }
+  // network info set
+  void setInstance(GRInstance *inst) { m_instance = inst; }
+  void setNet(GRNet *n) { m_net = n; }
+  // network info get
+  std::string name() const { return m_name; }
+  GRInstance *instance() const { return m_instance; }
+  GRNet *net() const { return m_net; }
 
-  std::string getName() const { return m_name; }
-  // GRPoint getPosition() const { return GRPoint(m_layer, m_x_dbu, m_y_dbu); }
-  // GRPoint getOnGridPosition() const {
-  //   return GRPoint(m_layer, m_x_grid, m_y_grid);
-  // }
-  // int getConnectionLayer() const { return m_layer; }
+  // geo info set
+  void setPosition(const GRPoint &pos) { m_pos = pos; }
+  void setAccessPoints(const std::vector<GRPoint> &pts) {
+    m_access_points = pts;
+  }
 
-  GRInstance *getInstance() const { return m_instance; }
-  GRNet *getNet() const { return m_net; }
-  unsigned int getDirection() const { return m_direction; }
+  // get info get
+  GRPoint position() const { return m_pos; }
+  const std::vector<GRPoint> &accessPoints() const { return m_access_points; }
 
 private:
+  // network info
   std::string m_name;
-  // int m_x_dbu, m_y_dbu;
-  // int m_x_grid, m_y_grid;
-  // int m_layer;
-
   GRInstance *m_instance;
   GRNet *m_net;
-  unsigned int m_direction;
+
+  // geo info
+  GRPoint m_pos;
+  std::vector<GRPoint> m_access_points;
 };
 
 #endif

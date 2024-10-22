@@ -424,6 +424,41 @@ public:
   bool IsRectilinear() const { return BoxT<T>::x() == 0 || BoxT<T>::y() == 0; }
 };
 
+template <typename T> class BoxOnLayerT : public BoxT<T> {
+public:
+  int layerIdx;
+  BoxOnLayerT() = default;
+  template <class... Args>
+  BoxOnLayerT(int l, Args &&...args)
+      : BoxT<T>(std::forward<Args>(args)...), layerIdx(l) {}
+};
+
+template <typename T> class PointOnLayerT : public PointT<T> {
+public:
+  int layerIdx;
+  PointOnLayerT() = default;
+  PointOnLayerT(int l, T x, T y) : PointT<T>(x, y), layerIdx(l) {}
+  bool operator<(const PointOnLayerT<T> &other) {
+    return layerIdx < other.layerIdx ||
+           (layerIdx == other.layerIdx && PointT<T>::x < other.x) ||
+           (layerIdx == other.layerIdx && PointT<T>::x == other.x &&
+            PointT<T>::y < other.y);
+  }
+  bool operator==(const PointOnLayerT &other) const {
+    return layerIdx == other.layerIdx && PointT<T>::x == other.x &&
+           PointT<T>::y == other.y;
+  }
+  bool operator!=(const PointOnLayerT &other) const {
+    return !(this->operator==(other));
+  }
+  bool operator<(const PointOnLayerT<T> &other) const {
+    return layerIdx < other.layerIdx ||
+           (layerIdx == other.layerIdx && PointT<T>::x < PointT<T>::x) ||
+           (layerIdx == other.layerIdx && PointT<T>::x == PointT<T>::x &&
+            PointT<T>::y < PointT<T>::y);
+  }
+};
+
 } // namespace utils
 
 #endif

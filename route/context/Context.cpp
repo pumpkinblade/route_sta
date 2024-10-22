@@ -1,53 +1,63 @@
-#include "App.hpp"
+#include "Context.hpp"
+#include "../lefdef/LefDefDatabase.hpp"
 #include "../util/log.hpp"
 #include <fstream>
 #include <iomanip>
 #include <sta/Network.hh>
-#include <sta/NetworkClass.hh>
 #include <sta/PortDirection.hh>
+#include <sta/Report.hh>
 #include <sta/Sta.hh>
+#include <unordered_map>
 
-std::shared_ptr<App> App::s_app = std::make_shared<App>();
+std::unique_ptr<Context> Context::s_ctx(new Context);
 
-bool App::writeSlack(const std::string &file) {
+static sta::Instance *link(const char *top_cell_name, bool, sta::Report *,
+                           sta::NetworkReader *) {
+  return Context::context()->linkNetwork(top_cell_name);
+}
+
+bool Context::writeSlack(const std::string &file) {
   std::ofstream ostream(file);
   if (!ostream) {
-    LOG_ERROR("can not open file %s", file.c_str());
+    m_sta_report->error(70000, "can not open file %s", file.c_str());
     return false;
   }
-  if (m_context == nullptr || m_sta_network == nullptr) {
-    LOG_ERROR("the Network has not been initialize");
-    return false;
-  }
-  if (m_sta_network->topInstance() == nullptr) {
-    LOG_ERROR("the Network has not been linked");
+  if (m_network == nullptr || m_sta_network->topInstance() == nullptr) {
+    m_sta_report->error(70000,
+                        "the Network has not been initialized or linked");
     return false;
   }
 
-  for (GRNet *net : m_context->getNets()) {
-    sta::Net *sta_net = m_sta_network->findNet(m_sta_network->topInstance(),
-                                               net->getName().c_str());
-    if (sta_net == nullptr) {
-      LOG_WARN("can not find net %s", net->getName().c_str());
-    } else {
-      float slack = sta::Sta::sta()->netSlack(sta_net, sta::MinMax::max());
-      ostream << net->getName() << " " << std::setprecision(2) << slack << '\n';
-    }
+  for (GRNet *net : m_network->nets()) {
+    float slack = m_parasitics_builder->getNetSlack(net);
+    ostream << net->name() << " " << std::setprecision(2) << slack << '\n';
   }
 
   return true;
 }
 
-bool App::readLefDef(const std::string &lef_file, const std::string &def_file) {
+bool Context::readLefDef(const std::string &lef_file,
+                         const std::string &def_file) {
+  m_sta_network = sta::Sta::sta()->networkReader();
+  m_sta_report = sta::Sta::sta()->report();
+  m_sta_network->setLinkFunc(link);
+
   m_lef_file = lef_file;
   m_def_file = def_file;
 
-  auto db = LefDefDatabase::read(m_lef_file, m_def_file);
-  if (db == nullptr) {
-    LOG_ERROR("error occur while read lef/def file");
+  LefDefDatabase db;
+  bool success = db.read(m_lef_file, m_def_file);
+  if (!success)
     return false;
-  }
-  m_context = std::make_shared<GRContext>(db);
+
+  LOG_INFO("read lef/def done");
+  m_tech = std::make_unique<GRTechnology>(&db);
+  LOG_INFO("init tech done");
+  m_network = std::make_unique<GRNetwork>(&db, m_tech.get());
+  LOG_INFO("init network done");
+  m_parasitics_builder =
+      std::make_unique<MakeWireParasitics>(m_network.get(), m_tech.get());
+  LOG_INFO("init parasitics_builder done");
 
   m_sta_library = m_sta_network->findLibrary("lefdef");
   if (m_sta_library == nullptr)
@@ -55,37 +65,35 @@ bool App::readLefDef(const std::string &lef_file, const std::string &def_file) {
 
   // topcell in def file
   sta::Cell *sta_top_cell =
-      m_sta_network->findCell(m_sta_library, m_context->getName().c_str());
+      m_sta_network->findCell(m_sta_library, m_network->designName().c_str());
   if (sta_top_cell) {
     m_sta_network->deleteCell(sta_top_cell);
   }
-  sta_top_cell = m_sta_network->makeCell(
-      m_sta_library, db->def_design_name.c_str(), false, m_def_file.c_str());
-  for (const GRPin *pin : m_context->getPins()) {
-    if (pin->getInstance() != nullptr)
-      continue;
-    sta::Port *port =
-        m_sta_network->makePort(sta_top_cell, pin->getName().c_str());
-    switch (pin->getDirection()) {
-    case DIRECTION_INOUT:
+  sta_top_cell = m_sta_network->makeCell(m_sta_library, db.design_name.c_str(),
+                                         false, m_def_file.c_str());
+  for (const DefIoPin &iopin : db.iopins) {
+    sta::Port *port = m_sta_network->makePort(sta_top_cell, iopin.name.c_str());
+    switch (iopin.direction) {
+    case PortDirection::Inout:
       m_sta_network->setDirection(port, sta::PortDirection::bidirect());
       break;
-    case DIRECTION_INPUT:
+    case PortDirection::Input:
       m_sta_network->setDirection(port, sta::PortDirection::input());
       break;
-    case DIRECTION_OUTPUT:
+    case PortDirection::Output:
       m_sta_network->setDirection(port, sta::PortDirection::output());
       break;
     default:
       m_sta_report->warn(70001, "Unknown direction of io PIN.%s",
-                         pin->getName().c_str());
+                         iopin.name.c_str());
       break;
     }
   }
+
   return true;
 }
 
-sta::Instance *App::linkNetwork(const std::string &top_cell_name) {
+sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
   if (m_sta_library == nullptr) {
     m_sta_report->error(70000, "libray has not been initialized");
     return nullptr;
@@ -102,16 +110,16 @@ sta::Instance *App::linkNetwork(const std::string &top_cell_name) {
       m_sta_network->makeInstance(sta_top_cell, "", nullptr);
 
   std::unordered_map<sta::Instance *, sta::LibertyCell *> sta_inst_cell_map;
-  for (const GRNet *net : m_context->getNets()) {
+  for (const GRNet *net : m_network->nets()) {
     sta::Net *sta_net =
-        m_sta_network->makeNet(net->getName().c_str(), sta_top_inst);
-    for (const GRPin *pin : net->getPins()) {
-      if (pin->getInstance() == nullptr) { // IO pin
+        m_sta_network->makeNet(net->name().c_str(), sta_top_inst);
+    for (const GRPin *pin : net->pins()) {
+      if (pin->instance() == nullptr) { // IO pin
         sta::Port *sta_port =
-            m_sta_network->findPort(sta_top_cell, pin->getName().c_str());
+            m_sta_network->findPort(sta_top_cell, pin->name().c_str());
         if (sta_port == nullptr) {
           m_sta_report->error(70000, "io port name PIN.%s not found",
-                              pin->getName().c_str());
+                              pin->name().c_str());
           m_sta_network->deleteInstance(sta_top_inst);
           return nullptr;
         }
@@ -122,23 +130,21 @@ sta::Instance *App::linkNetwork(const std::string &top_cell_name) {
         }
         m_sta_network->connect(sta_top_inst, sta_port, sta_net);
       } else { // internal pin
-
-        GRInstance *inst = pin->getInstance();
+        GRInstance *inst = pin->instance();
         sta::Instance *sta_inst = m_sta_network->findInstanceRelative(
-            sta_top_inst, inst->getName().c_str());
-
+            sta_top_inst, inst->name().c_str());
         // if the instance not found, then create it
         if (sta_inst == nullptr) {
           sta::LibertyCell *sta_liberty_cell =
-              m_sta_network->findLibertyCell(inst->getLibcellName().c_str());
+              m_sta_network->findLibertyCell(inst->libcellName().c_str());
           if (sta_liberty_cell == nullptr) {
             m_sta_report->error(70000, "%s is not a liberty libcell",
-                                inst->getLibcellName().c_str());
+                                inst->libcellName().c_str());
             m_sta_network->deleteInstance(sta_top_inst);
             return nullptr;
           }
           sta_inst = m_sta_network->makeInstance(
-              sta_liberty_cell, inst->getName().c_str(), sta_top_inst);
+              sta_liberty_cell, inst->name().c_str(), sta_top_inst);
           sta_inst_cell_map.emplace(sta_inst, sta_liberty_cell);
         }
 
@@ -146,11 +152,11 @@ sta::Instance *App::linkNetwork(const std::string &top_cell_name) {
         sta::LibertyCell *sta_liberty_cell = sta_inst_cell_map[sta_inst];
         sta::Cell *sta_cell = reinterpret_cast<sta::Cell *>(sta_liberty_cell);
         sta::Port *sta_port =
-            m_sta_network->findPort(sta_cell, pin->getName().c_str());
+            m_sta_network->findPort(sta_cell, pin->name().c_str());
         if (sta_port == nullptr) {
           m_sta_report->error(70000, "port name %s.%s not found",
                               m_sta_network->name(sta_cell),
-                              pin->getName().c_str());
+                              pin->name().c_str());
           m_sta_network->deleteInstance(sta_top_inst);
           return nullptr;
         }
@@ -159,9 +165,4 @@ sta::Instance *App::linkNetwork(const std::string &top_cell_name) {
     }
   }
   return sta_top_inst;
-}
-
-void App::setStaNetwork(sta::NetworkReader *sta_network) {
-  m_sta_network = sta_network;
-  m_sta_report = sta::Sta::sta()->report();
 }
