@@ -1,6 +1,6 @@
 ### 1. How to build
 ```shell
-git clone https://github.com/pumpkinblade/route_sta
+git clone --recursive https://github.com/pumpkinblade/route_sta
 cd route_sta
 cmake -B build
 cmake --build build
