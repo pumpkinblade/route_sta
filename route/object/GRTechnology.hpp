@@ -63,6 +63,7 @@ public:
   // grid
   std::vector<GRPoint> overlapGcells(const utils::BoxOnLayerT<int> &box) const;
   int getWireLengthDbu(const GRPoint &p, const GRPoint &q) const;
+  GRPoint dbuToGcell(const GRPoint &p) const;
 
 private:
   // dbu

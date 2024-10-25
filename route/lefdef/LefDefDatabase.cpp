@@ -183,7 +183,7 @@ static int defNetCbk(defrCallbackType_e, defiNet *net, defiUserData data) {
     }
   }
   std::vector<DefSegment> route;
-  for (int i = 0; i < net->numWires() && (db->nets.size() == 0); i++) {
+  for (int i = 0; i < net->numWires(); i++) {
     defiWire *wire = net->wire(i);
     for (int j = 0; j < wire->numPaths(); j++) {
       // assume a path only has two point
@@ -208,6 +208,18 @@ static int defNetCbk(defrCallbackType_e, defiNet *net, defiUserData data) {
           } else {
             path->getPoint(&seg.x2, &seg.y2);
           }
+        } break;
+        case DEFIPATH_FLUSHPOINT: {
+          int ext;
+          if (is_first_point) {
+            path->getFlushPoint(&seg.x1, &seg.y1, &ext);
+            seg.x2 = seg.x1;
+            seg.y2 = seg.y1;
+            is_first_point = false;
+          } else {
+            path->getFlushPoint(&seg.x2, &seg.y2, &ext);
+          }
+          (void)ext;
         } break;
         default:
           break;

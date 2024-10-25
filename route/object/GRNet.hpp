@@ -25,7 +25,10 @@ private:
   float m_slack;
 };
 
+class GRTechnology;
+
 std::shared_ptr<GRTreeNode>
-buildTree(const std::vector<std::pair<GRPoint, GRPoint>> &segs);
+buildTree(const std::vector<std::pair<GRPoint, GRPoint>> &segs,
+          const GRTechnology *tech);
 
 #endif

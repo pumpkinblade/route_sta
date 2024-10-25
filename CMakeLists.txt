@@ -5,6 +5,7 @@ project(route_sta)
 add_subdirectory(OpenSTA)
 add_subdirectory(lef)
 add_subdirectory(def)
+add_subdirectory(flute)
 add_subdirectory(route)
 
 add_executable(route_sta main.cpp)

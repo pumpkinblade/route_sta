@@ -1,11 +1,10 @@
 #pragma once
-#include "../obj/ISPD24Parser.h"
-#include "../utils/utils.h"
-#include "GRTree.h"
-#include <mutex>
+#include "../object/GRNetwork.hpp"
+#include "../object/GRTechnology.hpp"
+#include "../object/GRTree.hpp"
+#include "cugr2.h"
 
-class GRNet;
-template <typename Type> class GridGraphView;
+namespace cugr2 {
 
 struct GraphEdge {
   CapacityT capacity;
@@ -55,60 +54,49 @@ public:
 
 class GridGraph {
 public:
-  // GridGraph(const Design& design, const Parameters& params);
-  GridGraph(const ISPD24Parser &parser, const Parameters &params);
-  GridGraphView<bool> congestionView;
-  inline unsigned getNumLayers() const { return nLayers; }
-  inline unsigned getSize(unsigned dimension) const {
-    return (dimension ? ySize : xSize);
-  }
-  inline std::string getLayerName(int layerIndex) const {
+  GridGraph(const GRTechnology *tech, const Parameters &params);
+  int getNumLayers() const { return nLayers; }
+  int getSize(unsigned dimension) const { return (dimension ? ySize : xSize); }
+  std::string getLayerName(int layerIndex) const {
     return layerNames[layerIndex];
   }
-  inline unsigned getLayerDirection(int layerIndex) const {
+  unsigned getLayerDirection(int layerIndex) const {
     return layerDirections[layerIndex];
   }
-  inline DBU getLayerMinLength(int layerIndex) const {
+  DBU getLayerMinLength(int layerIndex) const {
     return layerMinLengths[layerIndex];
   }
   // Utility functions for cost calculation
-  inline CostT getUnitLengthWireCost() const { return unit_length_wire_cost; }
-  inline CostT getUnitViaCost() const { return unit_via_cost; }
-  // inline CostT getUnitLengthShortCost(const int layerIndex) const { return
-  // unit_length_short_costs[layerIndex]; } inline CostT
-  // getUnitOverflowCost(const int layerIndex) const { return
-  // unit_overflow_costs[layerIndex]; }
-  inline CostT getUnitOverflowCost(const int layerIndex) const {
-    return unit_overflow_costs[layerIndex];
+  CostT getUnitLengthWireCost() const { return unit_length_wire_cost; }
+  CostT getUnitViaCost() const { return unit_via_cost; }
+  CostT getLayerOverflowWeight(int layerIndex) const {
+    return layer_overflow_weight[layerIndex];
   }
 
-  inline uint64_t hashCell(const GRPoint &point) const {
-    return ((uint64_t)point.layerIdx * xSize + point.x) * ySize + point.y;
+  uint64_t hashCell(const GRPoint &pt) const {
+    return (static_cast<uint64_t>(pt.layerIdx) * xSize + pt.x) * ySize + pt.y;
   };
-  inline uint64_t hashCell(const int x, const int y) const {
-    return (uint64_t)x * ySize + y;
-  }
-
-  inline GraphEdge getEdge(const int layerIndex, const int x,
-                           const int y) const {
-    return graphEdges[layerIndex][x][y];
+  uint64_t hashCell(int x, int y) const {
+    return static_cast<uint64_t>(x) * ySize + y;
   }
 
   // Costs
-  DBU getEdgeLength(unsigned direction, unsigned edgeIndex) const {
+  GraphEdge getEdge(int layerIndex, int x, int y) const {
+    return graphEdges[layerIndex][x][y];
+  }
+  DBU getEdgeLength(unsigned direction, int edgeIndex) const {
     return edgeLengths[direction][edgeIndex];
   }
-  CostT getWireCost(const int layerIndex, const utils::PointT<int> u,
-                    const utils::PointT<int> v) const;
-  CostT getViaCost(const int layerIndex, const utils::PointT<int> loc) const;
-  CostT getNonStackViaCost(const int layerIndex,
-                           const utils::PointT<int> loc) const;
+  CostT getWireCost(int layerIndex, utils::PointT<int> u,
+                    utils::PointT<int> v) const;
+  CostT getViaCost(int layerIndex, utils::PointT<int> loc) const;
+  CostT getNonStackViaCost(int layerIndex, utils::PointT<int> loc) const;
 
   // Misc
   void selectAccessPoints(
-      GRNet &net,
-      robin_hood::unordered_map<
-          uint64_t, std::pair<utils::PointT<int>, utils::IntervalT<int>>>
+      GRNet *net,
+      std::unordered_map<uint64_t,
+                         std::pair<utils::PointT<int>, utils::IntervalT<int>>>
           &selectedAccessPoints) const;
 
   // Methods for updating demands
@@ -116,79 +104,64 @@ public:
                   const bool reverse = false);
 
   // Checks
-  inline bool checkOverflow(const int layerIndex, const int x,
-                            const int y) const {
+  bool checkOverflow(int layerIndex, int x, int y) const {
     return getEdge(layerIndex, x, y).getResource() < 0.0;
   }
-  int checkOverflow(const int layerIndex, const utils::PointT<int> u,
-                    const utils::PointT<int> v) const; // Check wire overflow
-  int checkOverflow(const std::shared_ptr<GRTreeNode> &tree)
-      const; // Check routing tree overflow (Only wires are checked)
-  std::string
-  getPythonString(const std::shared_ptr<GRTreeNode> &routingTree) const;
+  // check wire overflow
+  int checkOverflow(int layerIndex, utils::PointT<int> u,
+                    utils::PointT<int> v) const;
+  // check routing tree overflow
+  int checkOverflow(const std::shared_ptr<GRTreeNode> &tree) const;
 
   // 2D maps
   void extractBlockageView(GridGraphView<bool> &view) const;
-  void extractCongestionView(
-      GridGraphView<bool> &view) const; // 2D overflow look-up table
+  // 2D overflow look-up table
+  void extractCongestionView(GridGraphView<bool> &view) const;
   void extractWireCostView(GridGraphView<CostT> &view) const;
   void updateWireCostView(GridGraphView<CostT> &view,
                           std::shared_ptr<GRTreeNode> routingTree) const;
 
-  // For visualization
-  void write(const std::string heatmap_file = "heatmap.txt") const;
-
-  void clearDemand() {
-    totalLength = 0;
-    totalNumVias = 0;
-    for (int layerIdx = 0; layerIdx < nLayers; layerIdx++) {
-      constexpr unsigned int xBlock = 32;
-      constexpr unsigned int yBlock = 32;
-      for (int x = 0; x < xSize; x += xBlock)
-        for (int y = 0; y < ySize; y += yBlock)
-          for (int xx = x; xx < std::min(xSize, x + xBlock); xx++)
-            for (int yy = y; yy < std::min(ySize, y + yBlock); yy++)
-              graphEdges[layerIdx][xx][yy].demand = 0;
-    }
-  };
-
-  std::vector<std::vector<std::vector<GraphEdge>>> get() { return graphEdges; }
-
 private:
-  const Parameters &parameters;
+  // const Parameters &parameters;
 
-  unsigned nLayers;
-  unsigned xSize;
-  unsigned ySize;
-  std::vector<std::vector<DBU>> edgeLengths;
+  int nLayers;
+  int xSize;
+  int ySize;
   std::vector<std::string> layerNames;
   std::vector<unsigned> layerDirections;
   std::vector<DBU> layerMinLengths;
 
+  double cost_logistic_slope;
+  double maze_logistic_slope;
+  double via_multiplier;
+  int min_routing_layer;
+
   // Unit costs
   CostT unit_length_wire_cost;
   CostT unit_via_cost;
-  // std::vector<CostT> unit_length_short_costs;
-  std::vector<CostT> unit_overflow_costs;
+  std::vector<CostT> layer_overflow_weight;
+
+  std::vector<std::vector<DBU>> edgeLengths;
+  std::vector<std::vector<std::vector<GraphEdge>>> graphEdges;
+  // used in commiting routing tree
+  std::vector<std::vector<std::vector<bool>>> flag;
 
   DBU totalLength = 0;
   int totalNumVias = 0;
-  std::vector<std::vector<std::vector<GraphEdge>>> graphEdges;
-  // gridEdges[l][x][y] stores the edge {(l, x, y), (l, x+1, y)} or {(l, x, y),
-  // (l, x, y+1)} depending on the routing direction of the layer
-
-  // used in commiting routing tree
-  std::vector<std::vector<std::vector<bool>>> flag;
 
   inline double logistic(const CapacityT &input, const double slope) const;
   CostT getWireCost(const int layerIndex, const utils::PointT<int> lower,
                     const CapacityT demand = 1.0) const;
 
   // Methods for updating demands
+  void commit(const int layerIndex, const utils::PointT<int> lower,
+              const CapacityT demand);
   void commitWire(const int layerIndex, const utils::PointT<int> lower,
                   const bool reverse = false);
   void commitVia(const int layerIndex, const utils::PointT<int> loc,
                  const bool reverse = false);
   void commitNonStackVia(const int layerIndex, const utils::PointT<int> loc,
-                         const bool reverse);
+                         const bool reverse = false);
 };
+
+} // namespace cugr2

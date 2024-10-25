@@ -180,3 +180,13 @@ int GRTechnology::getWireLengthDbu(const GRPoint &p, const GRPoint &q) const {
          m_edge_length_acc_y[static_cast<size_t>(final_y)] -
          m_edge_length_acc_y[static_cast<size_t>(init_y)];
 }
+
+GRPoint GRTechnology::dbuToGcell(const GRPoint &p) const {
+  auto x_it =
+      std::lower_bound(m_grid_points_x.begin(), m_grid_points_x.end(), p.x);
+  auto y_it =
+      std::lower_bound(m_grid_points_y.begin(), m_grid_points_y.end(), p.y);
+  int x = static_cast<int>(std::distance(m_grid_points_x.begin(), x_it));
+  int y = static_cast<int>(std::distance(m_grid_points_y.begin(), y_it));
+  return GRPoint(p.layerIdx, x, y);
+}

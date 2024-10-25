@@ -43,6 +43,7 @@ target_link_libraries(route
   defzlib
   ${TCL_LIBRARY}
   OpenSTA
+  flute
 )
 
 target_include_directories(route

@@ -155,7 +155,7 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
     }
   }
 
-  /* std::unordered_map<std::string, int> via_layer_map;
+  std::unordered_map<std::string, int> via_layer_map;
   for (const auto &lef_via : db->lef_vias) {
     int cut_layer_idx = -1;
     for (const auto &layer_name : lef_via.layers) {
@@ -169,25 +169,27 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
   for (size_t i = 0; i < db->nets.size(); i++) {
     std::vector<std::pair<GRPoint, GRPoint>> segs;
     for (const DefSegment &def_seg : db->route_per_net[i]) {
-      GRPoint start, end;
+      GRPoint p, q;
       if (def_seg.x1 == def_seg.x2 && def_seg.y1 == def_seg.y2) { // via
         int cut_layer_idx = via_layer_map.at(def_seg.via_name);
         int layer1_idx = cut_layer_idx;
         int layer2_idx = cut_layer_idx + 1;
-        start = GRPoint(layer1_idx, def_seg.x1, def_seg.y1);
-        end = GRPoint(layer2_idx, def_seg.x1, def_seg.y1);
+        p = GRPoint(layer1_idx, def_seg.x1, def_seg.y1);
+        q = GRPoint(layer2_idx, def_seg.x1, def_seg.y1);
       } else { // wire
-        int layer_idx = tech->findCutLayer(def_seg.layer_name);
+        int layer_idx = tech->findLayer(def_seg.layer_name);
         auto [init_x, final_x] = std::minmax(def_seg.x1, def_seg.x2);
         auto [init_y, final_y] = std::minmax(def_seg.y1, def_seg.y2);
-        start = GRPoint(layer_idx, init_x, init_y);
-        end = GRPoint(layer_idx, final_x, final_y);
+        p = GRPoint(layer_idx, init_x, init_y);
+        q = GRPoint(layer_idx, final_x, final_y);
       }
-      segs.emplace_back(start, end);
+      p = tech->dbuToGcell(p);
+      q = tech->dbuToGcell(q);
+      segs.emplace_back(p, q);
     }
     // build routing tree using segs
-    m_nets[i]->setRoutingTree(buildTree(segs));
-  } */
+    m_nets[i]->setRoutingTree(buildTree(segs, tech));
+  }
 }
 
 GRInstance *GRNetwork::createInstance(const std::string &name) {
