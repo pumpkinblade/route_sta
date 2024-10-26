@@ -12,13 +12,6 @@ MakeWireParasitics::MakeWireParasitics(const GRNetwork *network,
   m_sta_network = m_sta->network();
   m_parasitics = m_sta->parasitics();
   m_arc_delay_calc = m_sta->arcDelayCalc();
-  m_resistor_id = 0;
-}
-
-void MakeWireParasitics::estimateParasitcs() {
-  for (GRNet *net : m_network->nets()) {
-    estimateParasitcs(net);
-  }
 }
 
 void MakeWireParasitics::estimateParasitcs(GRNet *net) {
@@ -61,9 +54,10 @@ void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
                                              NodeRoutePtMap &node_map) {
   if (net->routingTree() == nullptr)
     return;
+  size_t resistor_id = 1;
   GRTreeNode::preorder(
       net->routingTree(), [&](std::shared_ptr<GRTreeNode> tree) {
-        const int min_routing_layer = 1;
+        const int min_routing_layer = m_tech->minRoutingLayer();
         for (const auto &child : tree->children) {
           const auto [init_layer, final_layer] =
               std::minmax(tree->layerIdx, child->layerIdx);
@@ -82,19 +76,19 @@ void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
           if (!n1 || !n2)
             continue;
 
-          const int wire_length_dbu = m_tech->getWireLengthDbu(*tree, *child);
           float res = 0.f, cap = 0.f;
-          if (wire_length_dbu == 0) { // via
-            for (int l = init_layer; l < final_layer; l++)
-              res += m_tech->cutLayerRes(init_layer);
-          } else {
+          if (init_layer == final_layer) { // wire
+            int wire_length_dbu = m_tech->getWireLengthDbu(*tree, *child);
             cap += m_tech->layerCap(init_layer) *
                    m_tech->dbuToMicro(wire_length_dbu);
             res += m_tech->layerRes(init_layer) *
                    m_tech->dbuToMicro(wire_length_dbu);
+          } else { // via
+            for (int l = init_layer; l < final_layer; l++)
+              res += m_tech->cutLayerRes(l);
           }
           m_parasitics->incrCap(n1, 0.5f * cap);
-          m_parasitics->makeResistor(parasitic, m_resistor_id++, res, n1, n2);
+          m_parasitics->makeResistor(parasitic, resistor_id++, res, n1, n2);
           m_parasitics->incrCap(n2, 0.5f * cap);
         }
       });

@@ -44,6 +44,7 @@ public:
   float layerCap(int idx) const {
     return m_layer_cap[static_cast<size_t>(idx)];
   }
+  int minRoutingLayer() const { return 1; }
   // cut layer
   int findCutLayer(const std::string &name) const {
     return m_cut_layer_idx_map.at(name);

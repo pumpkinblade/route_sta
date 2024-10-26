@@ -157,13 +157,12 @@ static int defPinCbk(defrCallbackType_e, defiPin *pin, defiUserData data) {
   for (int i = 0; i < pin->numPorts(); i++) {
     defiPinPort *port = pin->pinPort(i);
     int x = port->placementX();
-    int y = port->placementX();
+    int y = port->placementY();
     for (int j = 0; j < port->numLayer(); j++) {
-      def_iopin.layers.push_back(port->layer(j));
       int xl, yl, xh, yh;
       port->bounds(j, &xl, &yl, &xh, &yh);
-      def_iopin.layers.push_back(port->layer(j));
       def_iopin.boxes.emplace_back(x + xl, y + yl, x + xh, y + yh);
+      def_iopin.layers.push_back(port->layer(j));
     }
   }
   db->iopins.push_back(def_iopin);
@@ -263,7 +262,7 @@ static int defGridCbk(defrCallbackType_e, defiGcellGrid *grid,
 }
 
 bool LefDefDatabase::read(const std::string &lef_file,
-                          const std::string &def_file) {
+                          const std::string &def_file, bool use_routing) {
   int res = 0;
   lefrInit();
   lefrSetUserData(this);
@@ -283,8 +282,10 @@ bool LefDefDatabase::read(const std::string &lef_file,
   }
 
   defrInit();
-  defrSetAddPathToNet();
   defrSetUserData(this);
+  if (use_routing) {
+    defrSetAddPathToNet();
+  }
   defrSetUnitsCbk(defDbuCbk);
   defrSetDieAreaCbk(defDieAreaCbk);
   defrSetDesignCbk(defDesignCbk);

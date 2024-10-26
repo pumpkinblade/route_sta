@@ -1,5 +1,6 @@
 #include "GRTechnology.hpp"
 #include "../lefdef/LefDefDatabase.hpp"
+#include "../util/log.hpp"
 #include <algorithm>
 
 GRTechnology::GRTechnology(const LefDefDatabase *db) {
@@ -47,38 +48,10 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
       break;
     }
   }
-  auto [it_grid_min_x, it_grid_max_x] =
-      std::minmax_element(m_grid_points_x.begin(), m_grid_points_x.end());
-  auto [it_grid_min_y, it_grid_max_y] =
-      std::minmax_element(m_grid_points_y.begin(), m_grid_points_y.end());
-  int grid_min_x = *it_grid_min_x;
-  int grid_max_x = *it_grid_max_x;
-  int grid_min_y = *it_grid_min_y;
-  int grid_max_y = *it_grid_max_x;
-
-  // init grid
-  // first check if the grid onvers all the tracks
-  for (const auto &def_track : db->tracks) {
-    int layer_idx = findLayer(def_track.layer_name);
-    if (def_track.direction != layerDirection(layer_idx))
-      continue;
-    int min_track = def_track.start;
-    int max_track = def_track.start + (def_track.count - 1) * def_track.step;
-    switch (def_track.direction) {
-    case LayerDirection::Horizontal:
-      grid_min_x = std::min(grid_min_x, min_track);
-      grid_max_x = std::max(grid_max_x, max_track + 1);
-      break;
-    case LayerDirection::Vertical:
-      grid_min_y = std::min(grid_min_y, min_track);
-      grid_max_y = std::max(grid_max_y, max_track + 1);
-      break;
-    }
-  }
-  m_grid_points_x.push_back(grid_min_x);
-  m_grid_points_x.push_back(grid_max_x);
-  m_grid_points_y.push_back(grid_min_y);
-  m_grid_points_y.push_back(grid_max_y);
+  m_grid_points_x.push_back(db->die_lx);
+  m_grid_points_x.push_back(db->die_ux);
+  m_grid_points_y.push_back(db->die_ly);
+  m_grid_points_y.push_back(db->die_uy);
   std::sort(m_grid_points_x.begin(), m_grid_points_x.end());
   std::sort(m_grid_points_y.begin(), m_grid_points_y.end());
   m_grid_points_x.erase(
@@ -87,6 +60,8 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
   m_grid_points_y.erase(
       std::unique(m_grid_points_y.begin(), m_grid_points_y.end()),
       m_grid_points_y.end());
+
+  // edge length
   m_edge_length_acc_x.push_back(0);
   for (size_t i = 0; i + 2 < m_grid_points_x.size(); i++) {
     int x1 = (m_grid_points_x[i] + m_grid_points_x[i + 1]) / 2;
@@ -150,23 +125,37 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
 std::vector<GRPoint>
 GRTechnology::overlapGcells(const utils::BoxOnLayerT<int> &box) const {
   std::vector<GRPoint> pts;
-  auto lx_it = std::lower_bound(m_grid_points_x.begin(), m_grid_points_x.end(),
+  auto lx_it = std::upper_bound(m_grid_points_x.begin(), m_grid_points_x.end(),
                                 box.lx());
-  auto ly_it = std::lower_bound(m_grid_points_y.begin(), m_grid_points_y.end(),
+  auto ly_it = std::upper_bound(m_grid_points_y.begin(), m_grid_points_y.end(),
                                 box.ly());
-  auto hx_it = std::upper_bound(m_grid_points_x.begin(), m_grid_points_x.end(),
+  auto hx_it = std::lower_bound(m_grid_points_x.begin(), m_grid_points_x.end(),
                                 box.hx());
-  auto hy_it = std::upper_bound(m_grid_points_y.begin(), m_grid_points_y.end(),
+  auto hy_it = std::lower_bound(m_grid_points_y.begin(), m_grid_points_y.end(),
                                 box.hy());
-  int lx = static_cast<int>(std::distance(m_grid_points_x.begin(), lx_it));
-  int ly = static_cast<int>(std::distance(m_grid_points_y.begin(), ly_it));
+  int lx = static_cast<int>(std::distance(m_grid_points_x.begin(), lx_it)) - 1;
+  int ly = static_cast<int>(std::distance(m_grid_points_y.begin(), ly_it)) - 1;
   int hx = static_cast<int>(std::distance(m_grid_points_x.begin(), hx_it));
-  int hy = static_cast<int>(std::distance(m_grid_points_x.begin(), hy_it));
+  int hy = static_cast<int>(std::distance(m_grid_points_y.begin(), hy_it));
   for (int x = lx; x < hx; x++) {
     for (int y = ly; y < hy; y++) {
       pts.emplace_back(box.layerIdx, x, y);
     }
   }
+  // if (pts.size() == 0 || pts.size() > 10) {
+  //   LOG_ERROR("0 gcell pin");
+  //   std::printf("[%d, %d] x [%d, %d]\n", box.lx(), box.hx(), box.ly(),
+  //               box.hy());
+  //   std::printf("      ");
+  //   for (auto x : m_grid_points_x) {
+  //     std::printf("%5d ", x);
+  //   }
+  //   std::printf("\n");
+  //   for (auto y : m_grid_points_y) {
+  //     std::printf("%5d\n", y);
+  //   }
+  //   std::cout << "\n";
+  // }
   return pts;
 }
 

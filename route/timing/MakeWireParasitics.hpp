@@ -11,7 +11,6 @@ class MakeWireParasitics {
 public:
   MakeWireParasitics(const GRNetwork *network, const GRTechnology *tech);
 
-  void estimateParasitcs();
   void estimateParasitcs(GRNet *net);
   void clearParasitics();
   // Return the Slack of a given net
@@ -34,7 +33,6 @@ private:
   sta::Network *m_sta_network;
   sta::Parasitics *m_parasitics;
   sta::ArcDelayCalc *m_arc_delay_calc;
-  size_t m_resistor_id;
 };
 
 #endif

@@ -19,7 +19,8 @@ public:
   static Context *context() { return s_ctx.get(); }
 
   bool writeSlack(const std::string &file);
-  bool readLefDef(const std::string &lef_file, const std::string &def_file);
+  bool readLefDef(const std::string &lef_file, const std::string &def_file,
+                  bool use_routing);
   sta::Instance *linkNetwork(const std::string &top_cell_name);
 
   GRNetwork *network() { return m_network.get(); }

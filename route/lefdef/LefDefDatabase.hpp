@@ -105,7 +105,8 @@ struct LefDefDatabase {
   std::vector<DefTrack> tracks;
   std::vector<DefGcellGrid> gcell_grids;
 
-  bool read(const std::string &lef_file, const std::string &def_file);
+  bool read(const std::string &lef_file, const std::string &def_file,
+            bool use_routing);
 };
 
 #endif

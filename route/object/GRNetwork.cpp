@@ -1,7 +1,9 @@
 #include "GRNetwork.hpp"
 #include "../lefdef/LefDefDatabase.hpp"
+#include "../util/log.hpp"
 #include "GRTechnology.hpp"
 #include "GRTree.hpp"
+#include <unordered_set>
 
 GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
   m_design_name = db->design_name;
@@ -16,10 +18,25 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
     std::unordered_map<std::string, PPin> pin_map;
   };
 
-  // map iopin_name to ppin
+  // LOG_TRACE("interest iopin and def_cell");
+  std::unordered_set<std::string> interest_iopin;
+  std::unordered_set<std::string> interest_inst;
+  for (const auto &def_net : db->nets) {
+    for (const auto &[inst_name, pin_name] : def_net.internal_pins) {
+      interest_inst.insert(inst_name);
+    }
+    for (const auto &pin_name : def_net.iopins) {
+      interest_iopin.insert(pin_name);
+    }
+  }
+
+  // LOG_TRACE("map iopin_name to ppin");
   std::unordered_map<std::string, PPin> ppin_map;
   for (const auto &def_iopin : db->iopins) {
-    PPin ppin;
+    if (interest_iopin.find(def_iopin.name) == interest_iopin.end())
+      continue;
+    ppin_map.emplace(def_iopin.name, PPin{});
+    PPin &ppin = ppin_map.at(def_iopin.name);
     ppin.name = def_iopin.name;
     for (size_t j = 0; j < def_iopin.layers.size(); j++) {
       utils::BoxT<int> box = def_iopin.boxes[j];
@@ -36,9 +53,11 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
     ppin_map.emplace(ppin.name, ppin);
   }
 
-  // map def_cell to pcell
+  // LOG_TRACE("map def_cell to pcell");
   std::unordered_map<std::string, PCell> pcell_map;
   for (const auto &cell : db->cells) {
+    if (interest_inst.find(cell.name) == interest_inst.end())
+      continue;
     PCell pcell;
     pcell.name = cell.name;
     pcell.libcell_name = cell.libcell_name;
@@ -56,53 +75,40 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
       ppin.name = libpin.name;
       for (size_t j = 0; j < libpin.layers.size(); j++) {
         utils::BoxT<float> box = libpin.boxes[j];
-        int box_lx = tech->microToDbu(box.lx());
-        int box_ly = tech->microToDbu(box.ly());
-        int box_hx = tech->microToDbu(box.hx());
-        int box_hy = tech->microToDbu(box.hy());
+        int dx = tech->microToDbu(box.lx());
+        int dy = tech->microToDbu(box.ly());
+        int bx = tech->microToDbu(box.width());
+        int by = tech->microToDbu(box.height());
         utils::BoxOnLayerT<int> box2;
         box2.layerIdx = tech->findLayer(libpin.layers[j]);
         switch (cell.orient) {
         case Orientation::N:
-          // (x, y) |-> (x, y)
-          box2.Set(lx + box_lx, ly + box_ly, lx + box_hx, ly + box_hy);
-          break;
-        case Orientation::W:
-          // (x, y) |-> (sy - y, x)
-          box2.Set(lx + sy - box_hy, ly + box_lx, lx + sy - box_ly,
-                   ly + box_hx);
+          box2.Set(lx + dx, ly + dy, lx + dx + bx, ly + dy + by);
           break;
         case Orientation::S:
-          // (x, y) |-> (sx - x, sy - y)
-          box2.Set(lx + sx - box_hx, ly + sy - box_hy, lx + sx - box_lx,
-                   ly + sy - box_ly);
-          break;
-        case Orientation::E:
-          // (x, y) |-> (y, sx - x)
-          box2.Set(lx + box_ly, ly + sx - box_hx, lx + box_hy,
-                   ly + sx - box_lx);
+          box2.Set(lx + sx - dx - bx, ly + sy - dy - by, lx + sx - dx,
+                   ly + sy - dy);
           break;
         case Orientation::FN:
-          // (x, y) |-> (sx - x, y)
-          box2.Set(lx + sx - box_hx, ly + box_ly, lx + sx - box_lx,
-                   ly + box_hy);
-          break;
-        case Orientation::FW:
-          // (x, y) |-> (y, x)
-          box2.Set(lx + box_ly, ly + box_lx, lx + box_hy, ly + box_hx);
+          box2.Set(lx + sx - dx - bx, ly + dy, lx + sx - dx, ly + dy + by);
           break;
         case Orientation::FS:
-          // (x, y) |-> (x, sy - y)
-          box2.Set(lx + box_lx, ly + sy - box_ly, lx + box_hx,
-                   ly + sy - box_hy);
+          box2.Set(lx + dx, ly + sy - dy - by, lx + dx + bx, ly + sy - dy);
           break;
-        case Orientation::FE:
-          // (x, y) |-> (sy - y, sx - x)
-          box2.Set(lx + sy - box_hy, ly + sx - box_hx, lx + sy - box_ly,
-                   ly + sx - box_lx);
+        default:
+          LOG_ERROR("Could not handle Orientation(%u)",
+                    static_cast<unsigned>(cell.orient));
+          box2.Set(lx + dx, ly + dy, lx + dx + bx, ly + dy + by);
           break;
         }
         std::vector<GRPoint> pts = tech->overlapGcells(box2);
+        // if (pts.size() == 0) {
+        //   std::printf("[%d, %d] x [%d, %d]\n", dx, dx + bx, dy, dy + by);
+        //   std::printf("[%d, %d] x [%d, %d]\n", lx, lx + sx, ly, ly + sy);
+        //   std::printf("%s\n", libcell->name.c_str());
+        //   std::printf("%s\n", cell.name.c_str());
+        //   exit(0);
+        // }
         ppin.access_points.insert(ppin.access_points.end(),
                                   ppin.access_points.begin(),
                                   ppin.access_points.end());
@@ -117,7 +123,7 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
     pcell_map.emplace(pcell.name, pcell);
   }
 
-  // create nets
+  // LOG_TRACE("create nets");
   std::unordered_map<std::string, GRInstance *> inst_name_map;
   for (const auto &def_net : db->nets) {
     GRNet *net = createNet(def_net.name);
@@ -155,6 +161,7 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
     }
   }
 
+  // LOG_TRACE("map via to cut_layer");
   std::unordered_map<std::string, int> via_layer_map;
   for (const auto &lef_via : db->lef_vias) {
     int cut_layer_idx = -1;
@@ -166,6 +173,7 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
     via_layer_map.emplace(lef_via.name, cut_layer_idx);
   }
 
+  // LOG_TRACE("create routing");
   for (size_t i = 0; i < db->nets.size(); i++) {
     std::vector<std::pair<GRPoint, GRPoint>> segs;
     for (const DefSegment &def_seg : db->route_per_net[i]) {

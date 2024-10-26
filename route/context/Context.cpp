@@ -28,6 +28,11 @@ bool Context::writeSlack(const std::string &file) {
     return false;
   }
 
+  m_parasitics_builder->clearParasitics();
+  for (GRNet *net : m_network->nets()) {
+    m_parasitics_builder->estimateParasitcs(net);
+  }
+
   for (GRNet *net : m_network->nets()) {
     float slack = m_parasitics_builder->getNetSlack(net);
     ostream << net->name() << " " << std::setprecision(2) << slack << '\n';
@@ -37,7 +42,7 @@ bool Context::writeSlack(const std::string &file) {
 }
 
 bool Context::readLefDef(const std::string &lef_file,
-                         const std::string &def_file) {
+                         const std::string &def_file, bool use_routing) {
   m_sta_network = sta::Sta::sta()->networkReader();
   m_sta_report = sta::Sta::sta()->report();
   m_sta_network->setLinkFunc(link);
@@ -46,7 +51,7 @@ bool Context::readLefDef(const std::string &lef_file,
   m_def_file = def_file;
 
   LefDefDatabase db;
-  bool success = db.read(m_lef_file, m_def_file);
+  bool success = db.read(m_lef_file, m_def_file, use_routing);
   if (!success)
     return false;
 
