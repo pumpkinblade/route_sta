@@ -1,4 +1,5 @@
 #include "Context.hpp"
+#include "../cugr2/GlobalRouter.h"
 #include "../lefdef/LefDefDatabase.hpp"
 #include "../util/log.hpp"
 #include <fstream>
@@ -170,4 +171,39 @@ sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
     }
   }
   return sta_top_inst;
+}
+
+bool Context::runCugr2() {
+  cugr2::Parameters params;
+  params.threads = 1;
+  params.unit_length_wire_cost = 0.00131579;
+  params.unit_via_cost = 4.;
+  params.layer_overflow_weight =
+      std::vector<double>(static_cast<size_t>(m_tech->numLayers()), 5.);
+  params.min_routing_layer = m_tech->minRoutingLayer();
+  params.cost_logistic_slope = 1.;
+  params.maze_logistic_slope = .5;
+  params.via_multiplier = 2.;
+  params.target_detour_count = 20;
+  params.max_detour_ratio = 0.25;
+  cugr2::GlobalRouter globalRouter(m_network.get(), m_tech.get(), params);
+  globalRouter.route();
+  return true;
+}
+
+bool Context::writeGuide(const std::string &file) {
+  LOG_TRACE("writing guide");
+  std::ofstream fout(file);
+  std::vector<std::array<int, 6>> guide;
+  for (GRNet *net : m_network->nets()) {
+    treeToGuide(guide, net->routingTree(), m_tech.get());
+    fout << net->name() << std::endl;
+    fout << "(\n";
+    for (const auto &[lx, ly, lz, hx, hy, hz] : guide)
+      fout << lx << " " << ly << " " << lz << " " << hx << " " << hy << " "
+           << hz << "\n";
+    fout << ")\n";
+  }
+  fout.close();
+  return true;
 }

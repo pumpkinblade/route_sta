@@ -2,7 +2,7 @@
 #include "../object/GRNetwork.hpp"
 #include "../object/GRTechnology.hpp"
 #include "../object/GRTree.hpp"
-#include "cugr2.h"
+#include "base.h"
 
 namespace cugr2 {
 
@@ -57,40 +57,37 @@ public:
   GridGraph(const GRTechnology *tech, const Parameters &params);
   int getNumLayers() const { return nLayers; }
   int getSize(unsigned dimension) const { return (dimension ? ySize : xSize); }
-  std::string getLayerName(int layerIndex) const {
-    return layerNames[layerIndex];
+  unsigned getLayerDirection(int layerIdx) const {
+    return layerDirections[layerIdx];
   }
-  unsigned getLayerDirection(int layerIndex) const {
-    return layerDirections[layerIndex];
-  }
-  DBU getLayerMinLength(int layerIndex) const {
-    return layerMinLengths[layerIndex];
+  DBU getLayerMinLength(int layerIdx) const {
+    return layerMinLengths[layerIdx];
   }
   // Utility functions for cost calculation
-  CostT getUnitLengthWireCost() const { return unit_length_wire_cost; }
-  CostT getUnitViaCost() const { return unit_via_cost; }
-  CostT getLayerOverflowWeight(int layerIndex) const {
-    return layer_overflow_weight[layerIndex];
+  CostT getUnitLengthWireCost() const { return params.unit_length_wire_cost; }
+  CostT getUnitViaCost() const { return params.unit_via_cost; }
+  CostT getLayerOverflowWeight(int layerIdx) const {
+    return params.layer_overflow_weight[layerIdx];
   }
 
   uint64_t hashCell(const GRPoint &pt) const {
     return (static_cast<uint64_t>(pt.layerIdx) * xSize + pt.x) * ySize + pt.y;
-  };
+  }
   uint64_t hashCell(int x, int y) const {
     return static_cast<uint64_t>(x) * ySize + y;
   }
 
   // Costs
-  GraphEdge getEdge(int layerIndex, int x, int y) const {
-    return graphEdges[layerIndex][x][y];
+  GraphEdge getEdge(int layerIdx, int x, int y) const {
+    return graphEdges[layerIdx][x][y];
   }
   DBU getEdgeLength(unsigned direction, int edgeIndex) const {
     return edgeLengths[direction][edgeIndex];
   }
-  CostT getWireCost(int layerIndex, utils::PointT<int> u,
+  CostT getWireCost(int layerIdx, utils::PointT<int> u,
                     utils::PointT<int> v) const;
-  CostT getViaCost(int layerIndex, utils::PointT<int> loc) const;
-  CostT getNonStackViaCost(int layerIndex, utils::PointT<int> loc) const;
+  CostT getViaCost(int layerIdx, utils::PointT<int> loc) const;
+  CostT getNonStackViaCost(int layerIdx, utils::PointT<int> loc) const;
 
   // Misc
   void selectAccessPoints(
@@ -104,11 +101,11 @@ public:
                   const bool reverse = false);
 
   // Checks
-  bool checkOverflow(int layerIndex, int x, int y) const {
-    return getEdge(layerIndex, x, y).getResource() < 0.0;
+  bool checkOverflow(int layerIdx, int x, int y) const {
+    return getEdge(layerIdx, x, y).getResource() < 0.0;
   }
   // check wire overflow
-  int checkOverflow(int layerIndex, utils::PointT<int> u,
+  int checkOverflow(int layerIdx, utils::PointT<int> u,
                     utils::PointT<int> v) const;
   // check routing tree overflow
   int checkOverflow(const std::shared_ptr<GRTreeNode> &tree) const;
@@ -122,24 +119,13 @@ public:
                           std::shared_ptr<GRTreeNode> routingTree) const;
 
 private:
-  // const Parameters &parameters;
+  const Parameters &params;
 
   int nLayers;
   int xSize;
   int ySize;
-  std::vector<std::string> layerNames;
   std::vector<unsigned> layerDirections;
   std::vector<DBU> layerMinLengths;
-
-  double cost_logistic_slope;
-  double maze_logistic_slope;
-  double via_multiplier;
-  int min_routing_layer;
-
-  // Unit costs
-  CostT unit_length_wire_cost;
-  CostT unit_via_cost;
-  std::vector<CostT> layer_overflow_weight;
 
   std::vector<std::vector<DBU>> edgeLengths;
   std::vector<std::vector<std::vector<GraphEdge>>> graphEdges;
@@ -150,17 +136,17 @@ private:
   int totalNumVias = 0;
 
   inline double logistic(const CapacityT &input, const double slope) const;
-  CostT getWireCost(const int layerIndex, const utils::PointT<int> lower,
+  CostT getWireCost(const int layerIdx, const utils::PointT<int> lower,
                     const CapacityT demand = 1.0) const;
 
   // Methods for updating demands
-  void commit(const int layerIndex, const utils::PointT<int> lower,
+  void commit(const int layerIdx, const utils::PointT<int> lower,
               const CapacityT demand);
-  void commitWire(const int layerIndex, const utils::PointT<int> lower,
+  void commitWire(const int layerIdx, const utils::PointT<int> lower,
                   const bool reverse = false);
-  void commitVia(const int layerIndex, const utils::PointT<int> loc,
+  void commitVia(const int layerIdx, const utils::PointT<int> loc,
                  const bool reverse = false);
-  void commitNonStackVia(const int layerIndex, const utils::PointT<int> loc,
+  void commitNonStackVia(const int layerIdx, const utils::PointT<int> loc,
                          const bool reverse = false);
 };
 

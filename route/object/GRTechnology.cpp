@@ -5,10 +5,12 @@
 
 GRTechnology::GRTechnology(const LefDefDatabase *db) {
   // dbu
+  LOG_TRACE("init dbu");
   m_dbu = db->dbu;
   m_inv_dbu = 1.f / static_cast<float>(m_dbu);
 
   // layer
+  LOG_TRACE("init layer");
   m_layer_name.resize(db->layers.size());
   m_layer_direction.resize(db->layers.size());
   m_layer_cap.resize(db->layers.size());
@@ -23,6 +25,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
   }
 
   // cut layer
+  LOG_TRACE("init cut layer");
   m_cut_layer_name.resize(db->cut_layers.size());
   m_cut_layer_res.resize(db->cut_layers.size());
   for (size_t i = 0; i < db->cut_layers.size(); i++) {
@@ -32,6 +35,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
   }
 
   // grid
+  LOG_TRACE("init grid");
   m_grid_points_x.clear();
   m_grid_points_y.clear();
   for (const auto &def_grid : db->gcell_grids) {
@@ -62,6 +66,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
       m_grid_points_y.end());
 
   // edge length
+  LOG_TRACE("init edge length");
   m_edge_length_acc_x.push_back(0);
   for (size_t i = 0; i + 2 < m_grid_points_x.size(); i++) {
     int x1 = (m_grid_points_x[i] + m_grid_points_x[i + 1]) / 2;
@@ -78,6 +83,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
   }
 
   // compute capcity
+  LOG_TRACE("init edge capacity");
   size_t num_cell_x = m_grid_points_x.size() - 1;
   size_t num_cell_y = m_grid_points_x.size() - 1;
   size_t num_layer = m_layer_name.size();
@@ -99,7 +105,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
         while (y >= m_grid_points_y[iy + 1]) {
           iy++;
         }
-        for (size_t ix = 1; ix < num_cell_x; ix++) {
+        for (size_t ix = 0; ix < num_cell_x - 1; ix++) {
           m_edge_capcity[l][ix][iy] += 1;
         }
         y += def_track.step;
@@ -112,7 +118,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
         while (x >= m_grid_points_y[ix + 1]) {
           ix++;
         }
-        for (size_t iy = 1; iy < num_cell_y; iy++) {
+        for (size_t iy = 0; iy < num_cell_y - 1; iy++) {
           m_edge_capcity[l][ix][iy] += 1;
         }
         x += def_track.step;

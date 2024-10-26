@@ -8,11 +8,16 @@ add_library(route
   ${ROUTE_HOME}/context/Context.cpp
   ${ROUTE_HOME}/object/GRNetwork.cpp
   ${ROUTE_HOME}/object/GRTechnology.cpp
-  ${ROUTE_HOME}/object/GRNet.cpp
+  ${ROUTE_HOME}/object/GRTree.cpp
   ${ROUTE_HOME}/lefdef/LefDefDatabase.cpp
   ${ROUTE_HOME}/timing/MakeWireParasitics.cpp
   ${ROUTE_HOME}/tcl/RouteTcl.cpp
   ${ROUTE_HOME}/util/log.cpp
+
+  ${ROUTE_HOME}/cugr2/GlobalRouter.cpp
+  ${ROUTE_HOME}/cugr2/GridGraph.cpp
+  ${ROUTE_HOME}/cugr2/MazeRoute.cpp
+  ${ROUTE_HOME}/cugr2/PatternRoute.cpp
 )
 
 add_library(special_warnings INTERFACE)
@@ -22,7 +27,7 @@ target_compile_options(special_warnings INTERFACE
   # -Weffc++
   -Wuninitialized
   -Wreturn-type
-  -Wconversion
+  # -Wconversion
   -Wsign-compare
   -Wunused-result
   -Wsuggest-override

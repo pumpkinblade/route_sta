@@ -23,6 +23,9 @@ public:
                   bool use_routing);
   sta::Instance *linkNetwork(const std::string &top_cell_name);
 
+  bool runCugr2();
+  bool writeGuide(const std::string &file);
+
   GRNetwork *network() { return m_network.get(); }
   GRTechnology *technology() { return m_tech.get(); }
 

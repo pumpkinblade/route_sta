@@ -32,6 +32,7 @@ public:
                ? -1
                : m_layer_idx_map.at(name);
   }
+  int numLayers() const { return static_cast<int>(m_layer_name.size()); }
   const std::string &layerName(int idx) const {
     return m_layer_name[static_cast<size_t>(idx)];
   }
@@ -63,8 +64,26 @@ public:
 
   // grid
   std::vector<GRPoint> overlapGcells(const utils::BoxOnLayerT<int> &box) const;
-  int getWireLengthDbu(const GRPoint &p, const GRPoint &q) const;
   GRPoint dbuToGcell(const GRPoint &p) const;
+  int numGcellX() const { return static_cast<int>(m_grid_points_x.size() - 1); }
+  int numGcellY() const { return static_cast<int>(m_grid_points_y.size() - 1); }
+  int edgeLengthDbuX(int x) const {
+    return m_edge_length_x[static_cast<size_t>(x)];
+  }
+  int edgeLengthDbuY(int y) const {
+    return m_edge_length_y[static_cast<size_t>(y)];
+  }
+  float edgeCapacity(int l, int x, int y) const {
+    return m_edge_capcity[l][x][y];
+  }
+  int layerMinLengthDbu(int idx) const {
+    return layerDirection(idx) == LayerDirection::Horizontal
+               ? *std::min_element(m_edge_length_x.begin(),
+                                   m_edge_length_x.end())
+               : *std::min_element(m_edge_length_y.begin(),
+                                   m_edge_length_y.end());
+  }
+  int getWireLengthDbu(const GRPoint &p, const GRPoint &q) const;
 
 private:
   // dbu

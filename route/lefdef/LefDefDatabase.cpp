@@ -240,8 +240,8 @@ static int defTrackCbk(defrCallbackType_e, defiTrack *track,
   def_track.step = static_cast<int>(track->xStep());
   def_track.start = static_cast<int>(track->x());
   def_track.direction = std::strcmp(track->macro(), "X") == 0
-                            ? LayerDirection::Horizontal
-                            : LayerDirection::Vertical;
+                            ? LayerDirection::Vertical
+                            : LayerDirection::Horizontal;
   def_track.layer_name = track->layer(0);
   db->tracks.push_back(def_track);
   return 0;
@@ -252,8 +252,8 @@ static int defGridCbk(defrCallbackType_e, defiGcellGrid *grid,
   LefDefDatabase *db = reinterpret_cast<LefDefDatabase *>(data);
   DefGcellGrid def_grid;
   def_grid.direction = std::strcmp(grid->macro(), "X") == 0
-                           ? LayerDirection::Horizontal
-                           : LayerDirection::Vertical;
+                           ? LayerDirection::Vertical
+                           : LayerDirection::Horizontal;
   def_grid.start = grid->x();
   def_grid.count = grid->xNum();
   def_grid.step = static_cast<int>(grid->xStep());

@@ -1,8 +1,10 @@
-read_liberty ./test/Nangate45_slow.lib
-r_read_lefdef ./test/Nangate45.lef ./test/gcd_nangate45.def 1
-link_design gcd
-create_clock [get_ports clk] -name core_clock -period 0.4850
-r_write_slack ./test/slack.txt
+# read_liberty ./test/Nangate45_slow.lib
+# r_read_lefdef ./test/Nangate45.lef ./test/gcd_nangate45.def 0
+# link_design gcd
+# create_clock [get_ports clk] -name core_clock -period 0.4850
+# r_write_slack ./test/slack.txt
+
+r_read_lefdef ./test/ispd24/Nangate_ispd24.lef ./test/ispd24/ariane133_51.def 0
 exit
 
 

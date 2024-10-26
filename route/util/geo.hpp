@@ -101,18 +101,9 @@ public:
   T range() const { return high - low; }
 
   // Update
-  // Update() is always safe, FastUpdate() assumes existing values
   void Update(T newVal) {
-    if (newVal < low)
-      low = newVal;
-    if (newVal > high)
-      high = newVal;
-  }
-  void FastUpdate(T newVal) {
-    if (newVal < low)
-      low = newVal;
-    else if (newVal > high)
-      high = newVal;
+    low = std::min(low, newVal);
+    high = std::max(high, newVal);
   }
 
   // Two types of intervals: 1. normal, 2. degenerated (i.e., point)
@@ -266,17 +257,11 @@ public:
     return (i == 0) ? x : y;
   }
 
-  // Update() is always safe, FastUpdate() assumes existing values
   void Update(T xVal, T yVal) {
     x.Update(xVal);
     y.Update(yVal);
   }
-  void FastUpdate(T xVal, T yVal) {
-    x.FastUpdate(xVal);
-    y.FastUpdate(yVal);
-  }
   void Update(const PointT<T> &pt) { Update(pt.x, pt.y); }
-  void FastUpdate(const PointT<T> &pt) { FastUpdate(pt.x, pt.y); }
 
   // Geometric Query/Update
   BoxT UnionWith(const BoxT &rhs) const {

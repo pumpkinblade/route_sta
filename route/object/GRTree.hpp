@@ -25,4 +25,18 @@ GRTreeNode::preorder(std::shared_ptr<GRTreeNode> node,
     preorder(child, visit);
 }
 
+class GRTechnology;
+
+std::shared_ptr<GRTreeNode>
+buildTree(const std::vector<std::pair<GRPoint, GRPoint>> &segs,
+          const GRTechnology *tech);
+
+// This function will split the tree into segments, and reconstruct the tree
+std::shared_ptr<GRTreeNode> trimTree(std::shared_ptr<GRTreeNode> tree,
+                                     const GRTechnology *tech);
+
+void treeToGuide(std::vector<std::array<int, 6>> &guides,
+                 const std::shared_ptr<GRTreeNode> &tree,
+                 const GRTechnology *tech);
+
 #endif
