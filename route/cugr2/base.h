@@ -19,7 +19,7 @@ struct Parameters {
 
   double unit_length_wire_cost;
   double unit_via_cost;
-  std::vector<double> layer_overflow_weight;
+  std::vector<double> unit_overflow_costs;
 
   int min_routing_layer;
 

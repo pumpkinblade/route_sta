@@ -2,9 +2,12 @@
 #include "../util/log.hpp"
 #include <queue>
 
-using std::vector;
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 
 namespace cugr2 {
+
+using std::vector;
 
 void SparseGraph::init(GridGraphView<CostT> &wireCostView, SparseGrid &grid) {
   // 0. Create pseudo pins
@@ -205,7 +208,7 @@ void MazeRoute::run() {
   }
 
   if (numDetached != 0) {
-    LOG_ERROR("failed to connect all pins");
+    LOG_ERROR("failed to connect all pins.");
   }
 }
 
@@ -284,7 +287,7 @@ std::shared_ptr<SteinerTreeNode> MazeRoute::getSteinerTree() const {
   SteinerTreeNode::preorder(tree, [&](std::shared_ptr<SteinerTreeNode> node) {
     for (auto child : node->children) {
       if (node->x == child->x && node->y == child->y) {
-        LOG_ERROR("duplicate tree nodes encountered");
+        LOG_ERROR("duplicate tree nodes");
       }
     }
   });

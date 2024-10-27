@@ -1,14 +1,13 @@
 #pragma once
-#include "../object/GRNet.hpp"
 #include "GridGraph.h"
 #include <flute.h>
+
+namespace cugr2 {
 
 extern "C" {
 void readLUT();
 Tree flute(int d, DTYPE x[], DTYPE y[], int acc);
 }
-
-namespace cugr2 {
 
 class SteinerTreeNode : public utils::PointT<int> {
 public:
@@ -22,7 +21,6 @@ public:
   static void
   preorder(std::shared_ptr<SteinerTreeNode> node,
            std::function<void(std::shared_ptr<SteinerTreeNode>)> visit);
-  static std::string getPythonString(std::shared_ptr<SteinerTreeNode> node);
 };
 
 class PatternRoutingNode : public utils::PointT<int> {
@@ -46,10 +44,8 @@ public:
       : utils::PointT<int>(point), index(_index), optional(_optional) {}
   PatternRoutingNode(utils::PointT<int> point,
                      utils::IntervalT<int> _fixedLayers, int _index = 0)
-      : utils::PointT<int>(point), index(_index), fixedLayers(_fixedLayers),
+      : utils::PointT<int>(point), fixedLayers(_fixedLayers), index(_index),
         optional(false) {}
-  static std::string
-  getPythonString(std::shared_ptr<PatternRoutingNode> routingDag);
 };
 
 class PatternRoute {
@@ -57,7 +53,7 @@ public:
   static void readFluteLUT() { readLUT(); };
 
   PatternRoute(GRNet *_net, const GridGraph &graph, const Parameters &param)
-      : parameters(param), gridGraph(graph), net(_net), numDagNodes(0) {}
+      : net(_net), gridGraph(graph), parameters(param), numDagNodes(0) {}
   void constructSteinerTree();
   void constructRoutingDAG();
   void constructDetours(GridGraphView<bool> &congestionView);

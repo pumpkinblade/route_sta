@@ -1,10 +1,12 @@
 #include "PatternRoute.h"
 #include "../util/log.hpp"
-#include <sstream>
 
-using std::vector;
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 
 namespace cugr2 {
+
+using std::vector;
 
 void SteinerTreeNode::preorder(
     std::shared_ptr<SteinerTreeNode> node,
@@ -12,52 +14,6 @@ void SteinerTreeNode::preorder(
   visit(node);
   for (auto &child : node->children)
     preorder(child, visit);
-}
-
-std::string
-SteinerTreeNode::getPythonString(std::shared_ptr<SteinerTreeNode> node) {
-  vector<std::pair<utils::PointT<int>, utils::PointT<int>>> edges;
-  preorder(node, [&](std::shared_ptr<SteinerTreeNode> node) {
-    for (auto child : node->children) {
-      edges.emplace_back(*node, *child);
-    }
-  });
-  std::stringstream ss;
-  if (edges.size() == 0) {
-    ss << "[]";
-    return ss.str();
-  } else {
-    ss << "[";
-    for (size_t i = 0; i < edges.size(); i++) {
-      auto &edge = edges[i];
-      ss << "[" << edge.first << ", " << edge.second << "]";
-      ss << (i < edges.size() - 1 ? ", " : "]");
-    }
-  }
-  return ss.str();
-}
-
-std::string PatternRoutingNode::getPythonString(
-    std::shared_ptr<PatternRoutingNode> routingDag) {
-  vector<std::pair<utils::PointT<int>, utils::PointT<int>>> edges;
-  std::function<void(std::shared_ptr<PatternRoutingNode>)> getEdges =
-      [&](std::shared_ptr<PatternRoutingNode> node) {
-        for (auto &childPaths : node->paths) {
-          for (auto &path : childPaths) {
-            edges.emplace_back(*node, *path);
-            getEdges(path);
-          }
-        }
-      };
-  getEdges(routingDag);
-  std::stringstream ss;
-  ss << "[";
-  for (size_t i = 0; i < edges.size(); i++) {
-    auto &edge = edges[i];
-    ss << "[" << edge.first << ", " << edge.second << "]";
-    ss << (i < edges.size() - 1 ? ", " : "]");
-  }
-  return ss.str();
 }
 
 void PatternRoute::constructSteinerTree() {
@@ -142,7 +98,7 @@ void PatternRoute::constructSteinerTree() {
         return false;
       }
     };
-    for (size_t i = 0; i < steinerPoints.size(); i++) {
+    for (int i = 0; i < steinerPoints.size(); i++) {
       if (hasDegree1(i)) {
         root = i;
         break;
@@ -590,8 +546,8 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
                   gridGraph.getSize(1 - direction)) {
             continue;
           }
-          for (size_t childIndex = 0;
-               childIndex < scaffold->node->children.size(); childIndex++) {
+          for (int childIndex = 0; childIndex < scaffold->node->children.size();
+               childIndex++) {
             auto &treeChild = scaffold->node->children[childIndex];
             if (treeChild == scaffoldChild->node) {
               std::shared_ptr<PatternRoutingNode> shiftedChild =
@@ -651,12 +607,12 @@ void PatternRoute::calculateRoutingCosts(
   // Calculate child costs
   if (node->paths.size() > 0)
     childCosts.resize(node->paths.size());
-  for (size_t childIndex = 0; childIndex < node->paths.size(); childIndex++) {
+  for (int childIndex = 0; childIndex < node->paths.size(); childIndex++) {
     auto &childPaths = node->paths[childIndex];
     auto &costs = childCosts[childIndex];
     costs.assign(gridGraph.getNumLayers(),
                  {std::numeric_limits<CostT>::max(), -1});
-    for (size_t pathIndex = 0; pathIndex < childPaths.size(); pathIndex++) {
+    for (int pathIndex = 0; pathIndex < childPaths.size(); pathIndex++) {
       std::shared_ptr<PatternRoutingNode> &path = childPaths[pathIndex];
       calculateRoutingCosts(path);
       unsigned direction = node->x == path->x ? MetalLayer::V : MetalLayer::H;
@@ -712,8 +668,7 @@ void PatternRoute::calculateRoutingCosts(
     }
     for (int layerIndex = lowLayerIndex; layerIndex < gridGraph.getNumLayers();
          layerIndex++) {
-      for (size_t childIndex = 0; childIndex < node->paths.size();
-           childIndex++) {
+      for (int childIndex = 0; childIndex < node->paths.size(); childIndex++) {
         if (childCosts[childIndex][layerIndex].first <
             minChildCosts[childIndex]) {
           minChildCosts[childIndex] = childCosts[childIndex][layerIndex].first;
@@ -766,7 +721,7 @@ PatternRoute::getRoutingTree(std::shared_ptr<PatternRoutingNode> &node,
     int pathIndex, layerIndex;
     vector<vector<std::shared_ptr<PatternRoutingNode>>> pathsOnLayer(
         gridGraph.getNumLayers());
-    for (size_t childIndex = 0; childIndex < node->paths.size(); childIndex++) {
+    for (int childIndex = 0; childIndex < node->paths.size(); childIndex++) {
       std::tie(pathIndex, layerIndex) =
           node->bestPaths[parentLayerIndex][childIndex];
       pathsOnLayer[layerIndex].push_back(node->paths[childIndex][pathIndex]);

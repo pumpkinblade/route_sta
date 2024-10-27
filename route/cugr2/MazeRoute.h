@@ -1,8 +1,6 @@
 #pragma once
-#include "../object/GRNet.hpp"
 #include "GridGraph.h"
 #include "PatternRoute.h"
-#include <array>
 
 namespace cugr2 {
 
@@ -25,7 +23,7 @@ struct SparseGrid {
 class SparseGraph {
 public:
   SparseGraph(GRNet *_net, const GridGraph &graph3d, const Parameters &param)
-      : parameters(param), gridGraph(graph3d), net(_net) {}
+      : net(_net), gridGraph(graph3d), parameters(param) {}
   void init(GridGraphView<CostT> &wireCostView, SparseGrid &grid);
   int getNumVertices() const { return vertices.size(); }
   int getNumPseudoPins() const { return pseudoPins.size(); }
@@ -80,7 +78,7 @@ struct Solution {
 class MazeRoute {
 public:
   MazeRoute(GRNet *_net, const GridGraph &graph3d, const Parameters &param)
-      : parameters(param), gridGraph(graph3d), net(_net),
+      : net(_net), gridGraph(graph3d), parameters(param),
         graph(_net, graph3d, param) {}
 
   void run();

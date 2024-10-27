@@ -1,4 +1,5 @@
 #pragma once
+
 #include "GridGraph.h"
 
 namespace cugr2 {
@@ -12,27 +13,27 @@ public:
 
   void route();
 
-  void update_nonstack_via_counter(
-      int net_idx, const std::vector<std::vector<int>> &via_loc,
-      std::vector<std::vector<std::vector<int>>> &flag,
-      std::vector<std::vector<std::vector<int>>> &nonstack_via_counter) const;
-
 private:
   GRNetwork *m_network;
   GRTechnology *m_tech;
-  const Parameters &m_params;
+  Parameters parameters;
   GridGraph gridGraph;
 
   int areaOfPinPatches;
   int areaOfWirePatches;
 
+  int numofThreads;
+
   // for evaluation
   CostT unit_length_wire_cost;
   CostT unit_via_cost;
-  std::vector<CostT> layer_overflow_weight;
+  std::vector<CostT> unit_overflow_costs;
 
-  void sortNetIndices(std::vector<int> &netIndices) const;
   void printStatistics() const;
+  void update_nonstack_via_counter(
+      unsigned net_idx, const std::vector<std::vector<int>> &via_loc,
+      std::vector<std::vector<std::vector<int>>> &flag,
+      std::vector<std::vector<std::vector<int>>> &nonstack_via_counter) const;
 };
 
 } // namespace cugr2

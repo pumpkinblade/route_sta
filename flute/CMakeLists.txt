@@ -19,3 +19,13 @@ add_library(flute
 target_include_directories(flute
     PUBLIC ${PATH_FLUTE}
 )
+
+add_custom_command(
+  TARGET flute POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy 
+    ${PATH_FLUTE}/POST9.dat 
+    ${CMAKE_BINARY_DIR}/POST9.dat
+  COMMAND ${CMAKE_COMMAND} -E copy 
+    ${PATH_FLUTE}/POWV9.dat
+    ${CMAKE_BINARY_DIR}/POWV9.dat
+)

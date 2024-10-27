@@ -178,7 +178,7 @@ bool Context::runCugr2() {
   params.threads = 1;
   params.unit_length_wire_cost = 0.00131579;
   params.unit_via_cost = 4.;
-  params.layer_overflow_weight =
+  params.unit_overflow_costs =
       std::vector<double>(static_cast<size_t>(m_tech->numLayers()), 5.);
   params.min_routing_layer = m_tech->minRoutingLayer();
   params.cost_logistic_slope = 1.;

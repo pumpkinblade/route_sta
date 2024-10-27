@@ -5,6 +5,7 @@
 # r_write_slack ./test/slack.txt
 
 r_read_lefdef ./test/ispd24/Nangate_ispd24.lef ./test/ispd24/ariane133_51.def 0
+r_run_cugr2
 exit
 
 
