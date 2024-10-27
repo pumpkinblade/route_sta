@@ -55,6 +55,21 @@ static int run_cugr2_cmd(ClientData, Tcl_Interp *interp, int objc,
     return TCL_ERROR;
 }
 
+static int write_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
+                           Tcl_Obj *CONST objv[]) {
+  if (objc != 2) {
+    Tcl_WrongNumArgs(interp, objc, objv,
+                     "Usage : " CMD_PREFIX "write_guide guide_file");
+    return TCL_ERROR;
+  }
+  const char *guide_file = Tcl_GetStringFromObj(objv[1], nullptr);
+  bool ok = Context::context()->writeGuide(guide_file);
+  if (ok)
+    return TCL_OK;
+  else
+    return TCL_ERROR;
+}
+
 int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, CMD_PREFIX "read_lefdef", read_lefdef_cmd,
                        nullptr, nullptr);
@@ -62,5 +77,7 @@ int Route_Init(Tcl_Interp *interp) {
                        nullptr, nullptr);
   Tcl_CreateObjCommand(interp, CMD_PREFIX "run_cugr2", run_cugr2_cmd, nullptr,
                        nullptr);
+  Tcl_CreateObjCommand(interp, CMD_PREFIX "write_guide", write_guide_cmd,
+                       nullptr, nullptr);
   return TCL_OK;
 }
