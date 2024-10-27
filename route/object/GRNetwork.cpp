@@ -5,6 +5,79 @@
 #include "GRTree.hpp"
 #include <unordered_set>
 
+static utils::BoxT<int> getInternalPinBox(Orientation cell_orient,
+                                          const utils::BoxT<int> &cell_box,
+                                          const utils::BoxT<int> &pin_box) {
+  int lx = cell_box.lx(), ly = cell_box.ly();
+  int sx = cell_box.width(), sy = cell_box.height();
+  int dx = pin_box.lx(), dy = pin_box.ly();
+  int bx = pin_box.width(), by = pin_box.height();
+  utils::BoxT<int> box;
+  switch (cell_orient) {
+  case Orientation::N:
+    box.Set(lx + dx, ly + dy, lx + dx + bx, ly + dy + by);
+    break;
+  case Orientation::W:
+    box.Set(lx + sy - dy - by, ly + dx, lx + sy - dy, ly + dx + bx);
+    break;
+  case Orientation::S:
+    box.Set(lx + sx - dx - bx, ly + sy - dy - by, lx + sx - dx, ly + sy - dy);
+    break;
+  case Orientation::E:
+    box.Set(lx + dy, ly + sx - dx - bx, lx + dy + by, ly + sx - dx);
+    break;
+  case Orientation::FN:
+    box.Set(lx + sx - dx - bx, ly + dy, lx + sx - dx, ly + dy + by);
+    break;
+  case Orientation::FW:
+    box.Set(lx + dy, ly + dx, lx + dy + by, ly + dx + bx);
+    break;
+  case Orientation::FS:
+    box.Set(lx + dx, ly + sy - dy - by, lx + dx + bx, ly + sy - dy);
+    break;
+  case Orientation::FE:
+    box.Set(lx + sy - dy - by, ly + sx - dx - bx, lx + sy - dy, ly + sx - dx);
+    break;
+  }
+  return box;
+}
+
+static utils::BoxT<int> getIoPinBox(Orientation pin_orient,
+                                    const utils::PointT<int> &pin_loc,
+                                    const utils::BoxT<int> &pin_box) {
+  int x = pin_loc.x, y = pin_loc.y;
+  int lx = pin_box.lx(), ly = pin_box.ly();
+  int hx = pin_box.hx(), hy = pin_box.hy();
+  utils::BoxT<int> box;
+  switch (pin_orient) {
+  case Orientation::N:
+    box.Set(x + lx, y + ly, x + hx, y + hy);
+    break;
+  case Orientation::W:
+    box.Set(x - hy, y + lx, x - ly, y + hx);
+    break;
+  case Orientation::S:
+    box.Set(x - hx, y - hy, x - lx, y - ly);
+    break;
+  case Orientation::E:
+    box.Set(x + ly, y - hx, x + hy, y - lx);
+    break;
+  case Orientation::FN:
+    box.Set(x - hx, y + ly, x - lx, y + hy);
+    break;
+  case Orientation::FW:
+    box.Set(x + ly, y + lx, x + hy, y + hx);
+    break;
+  case Orientation::FS:
+    box.Set(x + lx, y - hy, x + hx, y - ly);
+    break;
+  case Orientation::FE:
+    box.Set(x - hy, y - hx, x - ly, y - lx);
+    break;
+  };
+  return box;
+}
+
 GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
   m_design_name = db->design_name;
 
@@ -72,41 +145,21 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
       size_t libpin_idx =
           libpin_name_idx_map_per_libcell[libcell_idx].at(pin_name);
       const auto &lef_libpin = lef_libcell.pins[libpin_idx];
-      int lx = def_inst.lx, ly = def_inst.ly;
-      int sx = tech->microToDbu(lef_libcell.size_x),
-          sy = tech->microToDbu(lef_libcell.size_y);
+      utils::BoxT<int> cell_box(
+          def_inst.lx, def_inst.ly,
+          def_inst.lx + tech->microToDbu(lef_libcell.size_x),
+          def_inst.ly + tech->microToDbu(lef_libcell.size_y));
       std::vector<GRPoint> access_points;
       for (size_t j = 0; j < lef_libpin.layers.size(); j++) {
-        utils::BoxT<float> box = lef_libpin.boxes[j];
-        int dx = tech->microToDbu(box.lx());
-        int dy = tech->microToDbu(box.ly());
-        int bx = tech->microToDbu(box.width());
-        int by = tech->microToDbu(box.height());
-        utils::BoxOnLayerT<int> box2;
-        box2.layerIdx = tech->findLayer(lef_libpin.layers[j]);
-        switch (def_inst.orient) {
-        case Orientation::N:
-          box2.Set(lx + dx, ly + dy, lx + dx + bx, ly + dy + by);
-          break;
-        case Orientation::S:
-          box2.Set(lx + sx - dx - bx, ly + sy - dy - by, lx + sx - dx,
-                   ly + sy - dy);
-          break;
-        case Orientation::FN:
-          box2.Set(lx + sx - dx - bx, ly + dy, lx + sx - dx, ly + dy + by);
-          break;
-        case Orientation::FS:
-          box2.Set(lx + dx, ly + sy - dy - by, lx + dx + bx, ly + sy - dy);
-          break;
-        default:
-          LOG_ERROR("Could not handle Orientation(%u)",
-                    static_cast<unsigned>(def_inst.orient));
-          box2.Set(lx + dx, ly + dy, lx + dx + bx, ly + dy + by);
-          break;
-        }
-        std::vector<GRPoint> pts = tech->overlapGcells(box2);
-        access_points.insert(access_points.end(), access_points.begin(),
-                             access_points.end());
+        utils::BoxT<int> pin_box(tech->microToDbu(lef_libpin.boxes[j].lx()),
+                                 tech->microToDbu(lef_libpin.boxes[j].ly()),
+                                 tech->microToDbu(lef_libpin.boxes[j].hx()),
+                                 tech->microToDbu(lef_libpin.boxes[j].hy()));
+        utils::BoxOnLayerT<int> box(
+            tech->findLayer(lef_libpin.layers[j]),
+            getInternalPinBox(def_inst.orient, cell_box, pin_box));
+        std::vector<GRPoint> pts = tech->overlapGcells(box);
+        access_points.insert(access_points.end(), pts.begin(), pts.end());
       }
       std::sort(access_points.begin(), access_points.end());
       access_points.erase(
@@ -127,10 +180,11 @@ GRNetwork::GRNetwork(const LefDefDatabase *db, const GRTechnology *tech) {
       const auto &def_iopin = db->iopins[idx];
       std::vector<GRPoint> access_points;
       for (size_t j = 0; j < def_iopin.layers.size(); j++) {
-        utils::BoxT<int> box = def_iopin.boxes[j];
-        int layerIdx = tech->findLayer(def_iopin.layers[j]);
-        utils::BoxOnLayerT<int> box2(layerIdx, box);
-        std::vector<GRPoint> pts = tech->overlapGcells(box2);
+        utils::BoxOnLayerT<int> box(tech->findLayer(def_iopin.layers[j]),
+                                    getIoPinBox(def_iopin.orients[j],
+                                                def_iopin.pts[j],
+                                                def_iopin.boxes[j]));
+        std::vector<GRPoint> pts = tech->overlapGcells(box);
         access_points.insert(access_points.end(), pts.begin(), pts.end());
       }
       std::sort(access_points.begin(), access_points.end());

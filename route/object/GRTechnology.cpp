@@ -42,12 +42,12 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
     switch (def_grid.direction) {
     case LayerDirection::Horizontal:
       for (int i = 0; i < def_grid.count; i++) {
-        m_grid_points_x.push_back(def_grid.start + i * def_grid.step);
+        m_grid_points_y.push_back(def_grid.start + i * def_grid.step);
       }
       break;
     case LayerDirection::Vertical:
       for (int i = 0; i < def_grid.count; i++) {
-        m_grid_points_y.push_back(def_grid.start + i * def_grid.step);
+        m_grid_points_x.push_back(def_grid.start + i * def_grid.step);
       }
       break;
     }
@@ -85,7 +85,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
   // compute capcity
   LOG_TRACE("init edge capacity");
   size_t num_cell_x = m_grid_points_x.size() - 1;
-  size_t num_cell_y = m_grid_points_x.size() - 1;
+  size_t num_cell_y = m_grid_points_y.size() - 1;
   size_t num_layer = m_layer_name.size();
   m_edge_capcity.clear();
   m_edge_capcity.resize(num_layer,
@@ -96,7 +96,6 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
     if (def_track.direction != layerDirection(layer_idx))
       continue;
     size_t l = static_cast<size_t>(layer_idx);
-    // TODO: is it necessary to handle the offset defined in lef ?
     switch (def_track.direction) {
     case LayerDirection::Horizontal: {
       int y = def_track.start;
@@ -115,7 +114,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
       int x = def_track.start;
       size_t ix = 0;
       for (int c = 0; c < def_track.count; c++) {
-        while (x >= m_grid_points_y[ix + 1]) {
+        while (x >= m_grid_points_x[ix + 1]) {
           ix++;
         }
         for (size_t iy = 0; iy < num_cell_y - 1; iy++) {
@@ -130,6 +129,11 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
 
 std::vector<GRPoint>
 GRTechnology::overlapGcells(const utils::BoxOnLayerT<int> &box) const {
+  if (box.lx() < m_grid_points_x.front() || box.hx() > m_grid_points_x.back() ||
+      box.ly() < m_grid_points_y.front() || box.hy() > m_grid_points_y.back()) {
+    LOG_ERROR("box out of range");
+    exit(0);
+  }
   std::vector<GRPoint> pts;
   auto lx_it = std::upper_bound(m_grid_points_x.begin(), m_grid_points_x.end(),
                                 box.lx());

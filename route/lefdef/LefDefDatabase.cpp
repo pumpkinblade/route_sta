@@ -154,15 +154,30 @@ static int defPinCbk(defrCallbackType_e, defiPin *pin, defiUserData data) {
       def_iopin.direction = PortDirection::Inout;
     }
   }
-  for (int i = 0; i < pin->numPorts(); i++) {
-    defiPinPort *port = pin->pinPort(i);
-    int x = port->placementX();
-    int y = port->placementY();
-    for (int j = 0; j < port->numLayer(); j++) {
+  if (pin->numPorts() == 0) {
+    int x = pin->placementX();
+    int y = pin->placementY();
+    for (int i = 0; i < pin->numLayer(); i++) {
       int xl, yl, xh, yh;
-      port->bounds(j, &xl, &yl, &xh, &yh);
-      def_iopin.boxes.emplace_back(x + xl, y + yl, x + xh, y + yh);
-      def_iopin.layers.push_back(port->layer(j));
+      pin->bounds(i, &xl, &yl, &xh, &yh);
+      def_iopin.orients.push_back(static_cast<Orientation>(pin->orient()));
+      def_iopin.boxes.emplace_back(xl, yl, xh, yh);
+      def_iopin.pts.emplace_back(x, y);
+      def_iopin.layers.push_back(pin->layer(i));
+    }
+  } else {
+    for (int i = 0; i < pin->numPorts(); i++) {
+      defiPinPort *port = pin->pinPort(i);
+      int x = port->placementX();
+      int y = port->placementY();
+      for (int j = 0; j < port->numLayer(); j++) {
+        int xl, yl, xh, yh;
+        port->bounds(j, &xl, &yl, &xh, &yh);
+        def_iopin.orients.push_back(static_cast<Orientation>(port->orient()));
+        def_iopin.boxes.emplace_back(xl, yl, xh, yh);
+        def_iopin.pts.emplace_back(x, y);
+        def_iopin.layers.push_back(port->layer(j));
+      }
     }
   }
   db->iopins.push_back(def_iopin);

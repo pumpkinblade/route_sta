@@ -54,7 +54,9 @@ struct DefCell {
 struct DefIoPin {
   std::string name;
   PortDirection direction;
+  std::vector<Orientation> orients;
   std::vector<utils::BoxT<int>> boxes;
+  std::vector<utils::PointT<int>> pts;
   std::vector<std::string> layers;
 };
 
