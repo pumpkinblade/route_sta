@@ -19,8 +19,8 @@ public:
   static Context *context() { return s_ctx.get(); }
 
   bool writeSlack(const std::string &file);
-  bool readLefDef(const std::string &lef_file, const std::string &def_file,
-                  bool use_routing);
+  bool readLef(const std::string &lef_file);
+  bool readDef(const std::string &def_file, bool use_routing);
   sta::Instance *linkNetwork(const std::string &top_cell_name);
 
   bool runCugr2();
@@ -38,8 +38,9 @@ private:
   sta::Report *m_sta_report;
   sta::NetworkReader *m_sta_network;
   sta::Library *m_sta_library;
-  std::string m_lef_file;
-  std::string m_def_file;
+
+  std::unique_ptr<LefDatabase> m_lef_db;
+  // std::unique_ptr<DefDatabase> m_def_db;
 };
 
 #endif

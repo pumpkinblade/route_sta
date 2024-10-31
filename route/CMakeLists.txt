@@ -9,7 +9,8 @@ add_library(route
   ${ROUTE_HOME}/object/GRNetwork.cpp
   ${ROUTE_HOME}/object/GRTechnology.cpp
   ${ROUTE_HOME}/object/GRTree.cpp
-  ${ROUTE_HOME}/lefdef/LefDefDatabase.cpp
+  ${ROUTE_HOME}/lefdef/LefDatabase.cpp
+  ${ROUTE_HOME}/lefdef/DefDatabase.cpp
   ${ROUTE_HOME}/timing/MakeWireParasitics.cpp
   ${ROUTE_HOME}/tcl/RouteTcl.cpp
   ${ROUTE_HOME}/util/log.cpp

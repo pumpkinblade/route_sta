@@ -3,6 +3,7 @@
 #include <sta/Corner.hh>
 #include <sta/Network.hh>
 #include <sta/Sta.hh>
+#include <sta/Units.hh>
 
 MakeWireParasitics::MakeWireParasitics(const GRNetwork *network,
                                        const GRTechnology *tech) {
@@ -79,10 +80,9 @@ void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
           float res = 0.f, cap = 0.f;
           if (init_layer == final_layer) { // wire
             int wire_length_dbu = m_tech->getWireLengthDbu(*tree, *child);
-            cap += m_tech->layerCap(init_layer) *
-                   m_tech->dbuToMicro(wire_length_dbu);
-            res += m_tech->layerRes(init_layer) *
-                   m_tech->dbuToMicro(wire_length_dbu);
+            double wire_length = m_tech->dbuToMeter(wire_length_dbu);
+            cap += m_tech->layerCap(init_layer) * wire_length;
+            res += m_tech->layerRes(init_layer) * wire_length;
           } else { // via
             for (int l = init_layer; l < final_layer; l++)
               res += m_tech->cutLayerRes(l);
@@ -90,6 +90,11 @@ void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
           m_parasitics->incrCap(n1, 0.5f * cap);
           m_parasitics->makeResistor(parasitic, resistor_id++, res, n1, n2);
           m_parasitics->incrCap(n2, 0.5f * cap);
+          // sta::Unit *res_unit = m_sta->units()->resistanceUnit();
+          // sta::Unit *cap_unit = m_sta->units()->capacitanceUnit();
+          // LOG_DEBUG("res: %s %s, cap: %s %s", res_unit->asString(res),
+          //           res_unit->scaledSuffix(), cap_unit->asString(cap),
+          //           cap_unit->scaledSuffix());
         }
       });
 }

@@ -243,7 +243,7 @@ void GlobalRouter::printStatistics() const {
     }
     overflow_cost += layer_overflows * unit_overflow_costs[z];
     std::printf("Layer = %d, num_overflows = %llu, layer_overflows = %f, "
-                "overflow_cost = %f",
+                "overflow_cost = %f\n",
                 z, num_overflows, layer_overflows, overflow_cost);
   }
 

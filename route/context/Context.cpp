@@ -1,6 +1,7 @@
 #include "Context.hpp"
 #include "../cugr2/GlobalRouter.h"
-#include "../lefdef/LefDefDatabase.hpp"
+#include "../lefdef/DefDatabase.hpp"
+#include "../lefdef/LefDatabase.hpp"
 #include "../util/log.hpp"
 #include <fstream>
 #include <iomanip>
@@ -8,6 +9,7 @@
 #include <sta/PortDirection.hh>
 #include <sta/Report.hh>
 #include <sta/Sta.hh>
+#include <sta/Units.hh>
 #include <unordered_map>
 
 std::unique_ptr<Context> Context::s_ctx(new Context);
@@ -42,28 +44,32 @@ bool Context::writeSlack(const std::string &file) {
   return true;
 }
 
-bool Context::readLefDef(const std::string &lef_file,
-                         const std::string &def_file, bool use_routing) {
+bool Context::readLef(const std::string &lef_file) {
+  if (m_lef_db == nullptr) {
+    m_lef_db = std::make_unique<LefDatabase>();
+  }
+  return m_lef_db->read(lef_file);
+}
+
+bool Context::readDef(const std::string &def_file, bool use_routing) {
   m_sta_network = sta::Sta::sta()->networkReader();
   m_sta_report = sta::Sta::sta()->report();
   m_sta_network->setLinkFunc(link);
 
-  m_lef_file = lef_file;
-  m_def_file = def_file;
-
-  LefDefDatabase db;
-  bool success = db.read(m_lef_file, m_def_file, use_routing);
+  LOG_INFO("read def");
+  auto def_db = std::make_unique<DefDatabase>();
+  bool success = def_db->read(def_file, use_routing);
   if (!success)
     return false;
 
-  LOG_INFO("read lef/def done");
-  m_tech = std::make_unique<GRTechnology>(&db);
-  LOG_INFO("init tech done");
-  m_network = std::make_unique<GRNetwork>(&db, m_tech.get());
-  LOG_INFO("init network done");
+  LOG_INFO("init tech");
+  m_tech = std::make_unique<GRTechnology>(m_lef_db.get(), def_db.get());
+  LOG_INFO("init network");
+  m_network =
+      std::make_unique<GRNetwork>(m_lef_db.get(), def_db.get(), m_tech.get());
+  LOG_INFO("init parasitics_builder");
   m_parasitics_builder =
       std::make_unique<MakeWireParasitics>(m_network.get(), m_tech.get());
-  LOG_INFO("init parasitics_builder done");
 
   m_sta_library = m_sta_network->findLibrary("lefdef");
   if (m_sta_library == nullptr)
@@ -75,9 +81,9 @@ bool Context::readLefDef(const std::string &lef_file,
   if (sta_top_cell) {
     m_sta_network->deleteCell(sta_top_cell);
   }
-  sta_top_cell = m_sta_network->makeCell(m_sta_library, db.design_name.c_str(),
-                                         false, m_def_file.c_str());
-  for (const DefIoPin &iopin : db.iopins) {
+  sta_top_cell = m_sta_network->makeCell(
+      m_sta_library, def_db->design_name.c_str(), false, def_file.c_str());
+  for (const DefIoPin &iopin : def_db->iopins) {
     sta::Port *port = m_sta_network->makePort(sta_top_cell, iopin.name.c_str());
     switch (iopin.direction) {
     case PortDirection::Inout:

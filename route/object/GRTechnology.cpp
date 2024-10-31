@@ -1,44 +1,49 @@
 #include "GRTechnology.hpp"
-#include "../lefdef/LefDefDatabase.hpp"
+#include "../lefdef/DefDatabase.hpp"
+#include "../lefdef/LefDatabase.hpp"
+// #include "../lefdef/LefDefDatabase.hpp"
 #include "../util/log.hpp"
 #include <algorithm>
 
-GRTechnology::GRTechnology(const LefDefDatabase *db) {
-  // dbu
-  LOG_TRACE("init dbu");
-  m_dbu = db->dbu;
-  m_inv_dbu = 1.f / static_cast<float>(m_dbu);
-
+GRTechnology::GRTechnology(const LefDatabase *lef_db,
+                           const DefDatabase *def_db) {
   // layer
   LOG_TRACE("init layer");
-  m_layer_name.resize(db->layers.size());
-  m_layer_direction.resize(db->layers.size());
-  m_layer_cap.resize(db->layers.size());
-  m_layer_res.resize(db->layers.size());
-  for (size_t i = 0; i < db->layers.size(); i++) {
-    m_layer_name[i] = db->layers[i].name;
-    m_layer_direction[i] = db->layers[i].direction;
-    m_layer_cap[i] = db->layers[i].sq_cap * db->layers[i].wire_width +
-                     db->layers[i].edge_cap * 2.f;
-    m_layer_res[i] = db->layers[i].sq_res * db->layers[i].wire_width;
+  m_layer_name.resize(lef_db->layers.size());
+  m_layer_direction.resize(lef_db->layers.size());
+  m_layer_cap.resize(lef_db->layers.size());
+  m_layer_res.resize(lef_db->layers.size());
+  for (size_t i = 0; i < lef_db->layers.size(); i++) {
+    m_layer_name[i] = lef_db->layers[i].name;
+    m_layer_direction[i] = lef_db->layers[i].direction;
+    m_layer_cap[i] =
+        1e-6 * (lef_db->layers[i].sq_cap * lef_db->layers[i].wire_width +
+                lef_db->layers[i].edge_cap * 2.f);
+    m_layer_res[i] =
+        1e6 * lef_db->layers[i].sq_res * lef_db->layers[i].wire_width;
     m_layer_idx_map.emplace(m_layer_name[i], static_cast<int>(i));
   }
 
   // cut layer
   LOG_TRACE("init cut layer");
-  m_cut_layer_name.resize(db->cut_layers.size());
-  m_cut_layer_res.resize(db->cut_layers.size());
-  for (size_t i = 0; i < db->cut_layers.size(); i++) {
-    m_cut_layer_name[i] = db->cut_layers[i].name;
-    m_cut_layer_res[i] = db->cut_layers[i].res;
+  m_cut_layer_name.resize(lef_db->cut_layers.size());
+  m_cut_layer_res.resize(lef_db->cut_layers.size());
+  for (size_t i = 0; i < lef_db->cut_layers.size(); i++) {
+    m_cut_layer_name[i] = lef_db->cut_layers[i].name;
+    m_cut_layer_res[i] = lef_db->cut_layers[i].res;
     m_cut_layer_idx_map.emplace(m_cut_layer_name[i], static_cast<int>(i));
   }
+
+  // dbu
+  LOG_TRACE("init dbu");
+  m_dbu = def_db->dbu;
+  m_inv_dbu = 1.f / static_cast<double>(m_dbu);
 
   // grid
   LOG_TRACE("init grid");
   m_grid_points_x.clear();
   m_grid_points_y.clear();
-  for (const auto &def_grid : db->gcell_grids) {
+  for (const auto &def_grid : def_db->gcell_grids) {
     switch (def_grid.direction) {
     case LayerDirection::Horizontal:
       for (int i = 0; i < def_grid.count; i++) {
@@ -52,10 +57,10 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
       break;
     }
   }
-  m_grid_points_x.push_back(db->die_lx);
-  m_grid_points_x.push_back(db->die_ux);
-  m_grid_points_y.push_back(db->die_ly);
-  m_grid_points_y.push_back(db->die_uy);
+  m_grid_points_x.push_back(def_db->die_lx);
+  m_grid_points_x.push_back(def_db->die_ux);
+  m_grid_points_y.push_back(def_db->die_ly);
+  m_grid_points_y.push_back(def_db->die_uy);
   std::sort(m_grid_points_x.begin(), m_grid_points_x.end());
   std::sort(m_grid_points_y.begin(), m_grid_points_y.end());
   m_grid_points_x.erase(
@@ -91,7 +96,7 @@ GRTechnology::GRTechnology(const LefDefDatabase *db) {
   m_edge_capcity.resize(num_layer,
                         std::vector<std::vector<float>>(
                             num_cell_x, std::vector<float>(num_cell_y, 0.f)));
-  for (const auto &def_track : db->tracks) {
+  for (const auto &def_track : def_db->tracks) {
     int layer_idx = findLayer(def_track.layer_name);
     if (def_track.direction != layerDirection(layer_idx))
       continue;

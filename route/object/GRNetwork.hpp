@@ -6,12 +6,14 @@
 #include "GRPin.hpp"
 #include <vector>
 
-class LefDefDatabase;
+class LefDatabase;
+class DefDatabase;
 class GRTechnology;
 
 class GRNetwork {
 public:
-  GRNetwork(const LefDefDatabase *db, const GRTechnology *tech);
+  GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
+            const GRTechnology *tech);
 
   const std::string &designName() const { return m_design_name; }
   const std::vector<GRInstance *> &instances() const { return m_instances; }

@@ -8,18 +8,19 @@
 #include <unordered_map>
 #include <vector>
 
-class LefDefDatabase;
+class LefDatabase;
+class DefDatabase;
 
 class GRTechnology {
 public:
-  GRTechnology(const LefDefDatabase *db);
+  GRTechnology(const LefDatabase *lef_db, const DefDatabase *def_db);
 
   // dbu
   void setDbu(int u) { m_dbu = u; }
   int dbu() const { return m_dbu; }
-  float dbuToMicro(int u) const { return m_inv_dbu * static_cast<float>(u); }
-  float dbuToMeter(int u) const { return dbuToMicro(u) * 1e-6f; }
-  int microToDbu(float m) const {
+  double dbuToMicro(int u) const { return m_inv_dbu * static_cast<double>(u); }
+  double dbuToMeter(int u) const { return dbuToMicro(u) * 1e-6; }
+  int microToDbu(double m) const {
     return static_cast<int>(static_cast<double>(m_dbu) * m);
   }
 
@@ -39,10 +40,10 @@ public:
   LayerDirection layerDirection(int idx) const {
     return m_layer_direction[static_cast<size_t>(idx)];
   }
-  float layerRes(int idx) const {
+  double layerRes(int idx) const {
     return m_layer_res[static_cast<size_t>(idx)];
   }
-  float layerCap(int idx) const {
+  double layerCap(int idx) const {
     return m_layer_cap[static_cast<size_t>(idx)];
   }
   int minRoutingLayer() const { return 1; }
@@ -58,7 +59,7 @@ public:
   const std::string &cutLayerName(int idx) const {
     return m_cut_layer_name[static_cast<size_t>(idx)];
   }
-  float cutLayerRes(int idx) const {
+  double cutLayerRes(int idx) const {
     return m_cut_layer_res[static_cast<size_t>(idx)];
   }
 
@@ -88,17 +89,17 @@ public:
 private:
   // dbu
   int m_dbu;
-  float m_inv_dbu;
+  double m_inv_dbu;
 
   // layer
   std::vector<std::string> m_layer_name;
   std::vector<LayerDirection> m_layer_direction;
-  std::vector<float> m_layer_cap;
-  std::vector<float> m_layer_res;
+  std::vector<double> m_layer_cap; // pF/um
+  std::vector<double> m_layer_res; // Ohm/um
   std::unordered_map<std::string, int> m_layer_idx_map;
   // cut layer
   std::vector<std::string> m_cut_layer_name;
-  std::vector<float> m_cut_layer_res;
+  std::vector<double> m_cut_layer_res; // Ohm
   std::unordered_map<std::string, int> m_cut_layer_idx_map;
 
   // grid

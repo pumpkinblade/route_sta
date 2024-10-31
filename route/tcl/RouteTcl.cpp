@@ -4,33 +4,35 @@
 #include <sta/Sta.hh>
 #include <tcl.h>
 
-#define CMD_PREFIX "r_"
-
-static int read_lefdef_cmd(ClientData, Tcl_Interp *interp, int objc,
-                           Tcl_Obj *CONST objv[]) {
-  if (objc != 4) {
-    Tcl_WrongNumArgs(interp, objc, objv,
-                     "Usage : " CMD_PREFIX
-                     "read_lefdef lef_file def_file use_routing");
+static int read_lef_cmd(ClientData, Tcl_Interp *interp, int objc,
+                        Tcl_Obj *CONST objv[]) {
+  if (objc != 2) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : r_read_lef lef_file");
     return TCL_ERROR;
   }
   const char *lef_file = Tcl_GetStringFromObj(objv[1], nullptr);
-  const char *def_file = Tcl_GetStringFromObj(objv[2], nullptr);
-  int use_routing;
-  Tcl_GetIntFromObj(interp, objv[3], &use_routing);
+  bool ok = Context::context()->readLef(lef_file);
+  return ok ? TCL_OK : TCL_ERROR;
+}
 
-  bool ok = Context::context()->readLefDef(lef_file, def_file, !!use_routing);
-  if (ok)
-    return TCL_OK;
-  else
+static int read_def_cmd(ClientData, Tcl_Interp *interp, int objc,
+                        Tcl_Obj *CONST objv[]) {
+  if (objc != 3) {
+    Tcl_WrongNumArgs(interp, objc, objv,
+                     "Usage : r_read_def def_file use_routing");
     return TCL_ERROR;
+  }
+  const char *def_file = Tcl_GetStringFromObj(objv[1], nullptr);
+  int use_routing = 0;
+  Tcl_GetIntFromObj(interp, objv[2], &use_routing);
+  bool ok = Context::context()->readDef(def_file, !!use_routing);
+  return ok ? TCL_OK : TCL_ERROR;
 }
 
 static int write_slack_cmd(ClientData, Tcl_Interp *interp, int objc,
                            Tcl_Obj *CONST objv[]) {
   if (objc != 2) {
-    Tcl_WrongNumArgs(interp, objc, objv,
-                     "Usage : " CMD_PREFIX "write_slack slack_file");
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : r_write_slack slack_file");
     return TCL_ERROR;
   }
   const char *slack_file = Tcl_GetStringFromObj(objv[1], nullptr);
@@ -45,7 +47,7 @@ static int write_slack_cmd(ClientData, Tcl_Interp *interp, int objc,
 static int run_cugr2_cmd(ClientData, Tcl_Interp *interp, int objc,
                          Tcl_Obj *CONST objv[]) {
   if (objc != 1) {
-    Tcl_WrongNumArgs(interp, objc, objv, "Usage : " CMD_PREFIX "run_cugr2");
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : r_run_cugr2");
     return TCL_ERROR;
   }
   bool ok = Context::context()->runCugr2();
@@ -58,8 +60,7 @@ static int run_cugr2_cmd(ClientData, Tcl_Interp *interp, int objc,
 static int write_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
                            Tcl_Obj *CONST objv[]) {
   if (objc != 2) {
-    Tcl_WrongNumArgs(interp, objc, objv,
-                     "Usage : " CMD_PREFIX "write_guide guide_file");
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : r_write_guide guide_file");
     return TCL_ERROR;
   }
   const char *guide_file = Tcl_GetStringFromObj(objv[1], nullptr);
@@ -71,13 +72,12 @@ static int write_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
 }
 
 int Route_Init(Tcl_Interp *interp) {
-  Tcl_CreateObjCommand(interp, CMD_PREFIX "read_lefdef", read_lefdef_cmd,
-                       nullptr, nullptr);
-  Tcl_CreateObjCommand(interp, CMD_PREFIX "write_slack", write_slack_cmd,
-                       nullptr, nullptr);
-  Tcl_CreateObjCommand(interp, CMD_PREFIX "run_cugr2", run_cugr2_cmd, nullptr,
+  Tcl_CreateObjCommand(interp, "r_read_lef", read_lef_cmd, nullptr, nullptr);
+  Tcl_CreateObjCommand(interp, "r_read_def", read_def_cmd, nullptr, nullptr);
+  Tcl_CreateObjCommand(interp, "r_write_slack", write_slack_cmd, nullptr,
                        nullptr);
-  Tcl_CreateObjCommand(interp, CMD_PREFIX "write_guide", write_guide_cmd,
-                       nullptr, nullptr);
+  Tcl_CreateObjCommand(interp, "r_run_cugr2", run_cugr2_cmd, nullptr, nullptr);
+  Tcl_CreateObjCommand(interp, "r_write_guide", write_guide_cmd, nullptr,
+                       nullptr);
   return TCL_OK;
 }
