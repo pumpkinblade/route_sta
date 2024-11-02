@@ -16,10 +16,11 @@ We also implement several additional tcl commands
 
 ## Read lef/def file
 ### Command
-The `r_read_lefdef` command reads the network andgeometry information from lef/def file.
+The `r_read_lef` and `r_read_def` command reads the network and geometry information from lef/def file respectively.
 ```tcl
-r_read_lefdef
+r_read_lef
   [lef_file]
+r_read_def
   [def_file]
   [use_routing]
 ```
