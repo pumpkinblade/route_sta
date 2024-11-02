@@ -1,5 +1,17 @@
 # 0. Prerequisites
+## 0.1 OpenSTA
 See https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
+
+## 0.2 LEMON Graph Library
+See https://lemon.cs.elte.hu/trac/lemon
+
+## 0.3 Boost C++ Libraries
+```shell
+# Ubuntu
+sudo apt install libboost-all-dev
+# Archlinux
+sudo pacman -S --needed boost boost-libs
+```
 
 # 1. How to build
 ```shell
