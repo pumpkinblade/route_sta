@@ -1,13 +1,7 @@
 #pragma once
 #include "GridGraph.h"
-#include <flute.h>
 
 namespace cugr2 {
-
-extern "C" {
-void readLUT();
-Tree flute(int d, DTYPE x[], DTYPE y[], int acc);
-}
 
 class SteinerTreeNode : public utils::PointT<int> {
 public:
@@ -50,8 +44,6 @@ public:
 
 class PatternRoute {
 public:
-  static void readFluteLUT() { readLUT(); };
-
   PatternRoute(GRNet *_net, const GridGraph &graph, const Parameters &param)
       : net(_net), gridGraph(graph), parameters(param), numDagNodes(0) {}
   void constructSteinerTree();

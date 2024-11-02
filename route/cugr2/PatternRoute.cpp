@@ -1,4 +1,6 @@
 #include "PatternRoute.h"
+#include "../stt/flute.h"
+#include "../stt/steiner.h"
 #include "../util/log.hpp"
 
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -31,21 +33,19 @@ void PatternRoute::constructSteinerTree() {
           accessPoint.second.first, accessPoint.second.second);
     }
   } else {
-    auto xs = std::make_unique<int[]>(degree * 4);
-    auto ys = std::make_unique<int[]>(degree * 4);
-    int i = 0;
+    std::vector<int> xs, ys;
     for (auto &accessPoint : selectedAccessPoints) {
-      xs[i] = accessPoint.second.first.x;
-      ys[i] = accessPoint.second.first.y;
-      i++;
+      xs.push_back(accessPoint.second.first.x);
+      ys.push_back(accessPoint.second.first.y);
     }
-    Tree flutetree = flute(degree, xs.get(), ys.get(), ACCURACY);
+    stt::Tree flutetree = stt::flute(xs, ys, FLUTE_ACCURACY);
+
     const int numBranches = degree + degree - 2;
     vector<utils::PointT<int>> steinerPoints;
     steinerPoints.reserve(numBranches);
     vector<vector<int>> adjacentList(numBranches);
     for (int branchIndex = 0; branchIndex < numBranches; branchIndex++) {
-      const Branch &branch = flutetree.branch[branchIndex];
+      const stt::Branch &branch = flutetree.branch[branchIndex];
       steinerPoints.emplace_back(branch.x, branch.y);
       if (branchIndex == branch.n)
         continue;

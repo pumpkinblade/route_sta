@@ -39,7 +39,6 @@ void GlobalRouter::route() {
   // Stage 1: Pattern routing
   LOG_TRACE("stage 1: pattern routing");
   n1 = netIndices.size();
-  PatternRoute::readFluteLUT();
   gridGraph.clearDemand();
   for (const int netIndex : netIndices) {
     PatternRoute patternRoute(m_network->nets()[netIndex], gridGraph,
