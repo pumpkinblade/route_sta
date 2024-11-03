@@ -3,14 +3,21 @@
 See https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
 
 ## 0.2 LEMON Graph Library
-See https://lemon.cs.elte.hu/trac/lemon
+```shell
+curl http://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.tar.gz -o lemon-1.3.1.tar.gz
+tar -zxvf lemon-1.3.1.tar.gz
+cd lemon-1.3.1
+cmake -B build
+cmake --build build
+sudo cmake --install build
+# the preceding command will install lemon to /usr/local
+# or you can use the following command to install lemon by specifying a path
+# cmake --install build --prefix [path to install]
+```
 
 ## 0.3 Boost C++ Libraries
 ```shell
-# Ubuntu
 sudo apt install libboost-all-dev
-# Archlinux
-sudo pacman -S --needed boost boost-libs
 ```
 
 # 1. How to build
@@ -18,11 +25,17 @@ sudo pacman -S --needed boost boost-libs
 git clone --recursive https://github.com/pumpkinblade/route_sta
 cd route_sta
 cmake -B build
+# if you do not install lemon to /usr/local, use the following command
+# cmake -B build -DCMAKE_PREFIX_PATH=[path to install]
 cmake --build build
 ```
 
 # 2. How to run
-See https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
+```shell
+./build/route_sta ./test/test.tcl
+```
+
+See also https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
 
 We also implement several additional tcl commands
 
