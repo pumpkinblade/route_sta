@@ -2,6 +2,17 @@
 ## 0.1 OpenSTA
 See https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
 
+or
+```shell
+sudo apt install build-essential cmake tcl swig bison flex libeigen3-dev
+curl https://github.com/davidkebo/cudd/blob/main/cudd_versions/cudd-3.0.0.tar.gz -o cudd-3.0.0.tar.gz
+tar -zxvf cudd-3.0.0.tar.gz
+cd cudd-3.0.0
+./configure
+make
+```
+You can use the "configure --prefix" option and "make install" to install CUDD in a different directory
+
 ## 0.2 LEMON Graph Library
 ```shell
 curl http://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.tar.gz -o lemon-1.3.1.tar.gz
@@ -10,10 +21,8 @@ cd lemon-1.3.1
 cmake -B build
 cmake --build build
 sudo cmake --install build
-# the preceding command will install lemon to /usr/local
-# or you can use the following command to install lemon by specifying a path
-# cmake --install build --prefix [path to install]
 ```
+You can use the "cmake --install build --prefix" option install LEMON in a different directory
 
 ## 0.3 Boost C++ Libraries
 ```shell
@@ -25,10 +34,9 @@ sudo apt install libboost-all-dev
 git clone --recursive https://github.com/pumpkinblade/route_sta
 cd route_sta
 cmake -B build
-# if you do not install lemon to /usr/local, use the following command
-# cmake -B build -DCMAKE_PREFIX_PATH=[path to install]
 cmake --build build
 ```
+If you install CUDD and LEMON to other directory, use "cmake -B build -DCMAKE_PREFIX_PATH=\[path to install\]" instead. 
 
 # 2. How to run
 ```shell
