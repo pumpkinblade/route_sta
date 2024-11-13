@@ -19,13 +19,14 @@ public:
 private:
   using NodeRoutePtMap = std::map<GRPoint, sta::ParasiticNode *>;
 
-  void makeRouteParasitics(GRNet *net, sta::Net *sta_net, sta::Corner *corner,
-                           sta::ParasiticAnalysisPt *analysis_point,
-                           sta::Parasitic *parasitic, NodeRoutePtMap &node_map);
-  sta::ParasiticNode *ensureParasiticNode(int x, int y, int layer,
-                                          NodeRoutePtMap &node_map,
+  void makeRouteParasitics(GRNet *net, sta::Net *sta_net,
+                           sta::Parasitic *parasitic);
+  void makeParasiticsToPins(GRNet *net, sta::Net *sta_net,
+                            sta::Parasitic *parasitic);
+
+  sta::ParasiticNode *ensureParasiticNode(const GRPoint &pt,
                                           sta::Parasitic *parasitic,
-                                          sta::Net *net) const;
+                                          sta::Net *net);
 
   const GRNetwork *m_network;
   const GRTechnology *m_tech;
@@ -33,6 +34,9 @@ private:
   sta::Network *m_sta_network;
   sta::Parasitics *m_parasitics;
   sta::ArcDelayCalc *m_arc_delay_calc;
+
+  NodeRoutePtMap m_node_map;
+  size_t m_resistor_id;
 };
 
 #endif

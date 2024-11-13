@@ -5,6 +5,7 @@
 #include "../util/log.hpp"
 #include <fstream>
 #include <iomanip>
+#include <sta/Corner.hh>
 #include <sta/Network.hh>
 #include <sta/PortDirection.hh>
 #include <sta/Report.hh>
@@ -35,6 +36,7 @@ bool Context::writeSlack(const std::string &file) {
   for (GRNet *net : m_network->nets()) {
     m_parasitics_builder->estimateParasitcs(net);
   }
+  sta::Sta::sta()->delaysInvalid();
 
   for (GRNet *net : m_network->nets()) {
     float slack = m_parasitics_builder->getNetSlack(net);
@@ -54,6 +56,7 @@ bool Context::readLef(const std::string &lef_file) {
 bool Context::readDef(const std::string &def_file, bool use_routing) {
   m_sta_network = sta::Sta::sta()->networkReader();
   m_sta_report = sta::Sta::sta()->report();
+  sta::Sta::sta()->readNetlistBefore();
   m_sta_network->setLinkFunc(link);
 
   LOG_INFO("read def");
@@ -70,6 +73,7 @@ bool Context::readDef(const std::string &def_file, bool use_routing) {
   LOG_INFO("init parasitics_builder");
   m_parasitics_builder =
       std::make_unique<MakeWireParasitics>(m_network.get(), m_tech.get());
+  m_sta = sta::Sta::sta();
 
   m_sta_library = m_sta_network->findLibrary("lefdef");
   if (m_sta_library == nullptr)
@@ -137,10 +141,10 @@ sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
         }
         if (m_sta_network->findPin(sta_top_inst, sta_port) == nullptr) {
           sta::Pin *sta_pin =
-              m_sta_network->makePin(sta_top_inst, sta_port, sta_net);
+              m_sta_network->makePin(sta_top_inst, sta_port, nullptr);
           m_sta_network->makeTerm(sta_pin, sta_net);
         }
-        m_sta_network->connect(sta_top_inst, sta_port, sta_net);
+        // m_sta_network->connect(sta_top_inst, sta_port, sta_net);
       } else { // internal pin
         GRInstance *inst = pin->instance();
         sta::Instance *sta_inst = m_sta_network->findInstanceRelative(
@@ -172,7 +176,8 @@ sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
           m_sta_network->deleteInstance(sta_top_inst);
           return nullptr;
         }
-        m_sta_network->connect(sta_inst, sta_port, sta_net);
+        m_sta_network->makePin(sta_inst, sta_port, sta_net);
+        // m_sta_network->connect(sta_inst, sta_port, sta_net);
       }
     }
   }
@@ -211,5 +216,245 @@ bool Context::writeGuide(const std::string &file) {
     fout << ")\n";
   }
   fout.close();
+  return true;
+}
+
+bool Context::test() {
+  m_sta->setParasiticAnalysisPts(false);
+  const sta::MinMax *ap_min_max = sta::MinMax::max();
+  const sta::Corner *ap_corner = m_sta->corners()->corners()[0];
+  sta::ParasiticAnalysisPt *ap = ap_corner->findParasiticAnalysisPt(ap_min_max);
+  sta::Parasitics *parasitics = m_sta->parasitics();
+
+  float res1 = 40.f;
+  float cap1 = 0.243 * 1e-12;
+  float cap2 = 0.032 * 1e-12;
+
+  // net in1
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "in1");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ in1 }, n2{ r1:D }
+    sta::Pin *pin1 =
+        m_sta_network->findPin(m_sta_network->topInstance(), "in1");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *r1 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r1");
+    sta::Pin *pin2 = m_sta_network->findPin(r1, "D");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net in2
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "in2");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ in2 }, n2{ r2:D }
+    sta::Pin *pin1 =
+        m_sta_network->findPin(m_sta_network->topInstance(), "in2");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *r2 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r2");
+    sta::Pin *pin2 = m_sta_network->findPin(r2, "D");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net clk1
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "clk1");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ clk1 }, n2{ r1:CK }
+    sta::Pin *pin1 =
+        m_sta_network->findPin(m_sta_network->topInstance(), "clk1");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *r1 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r1");
+    sta::Pin *pin2 = m_sta_network->findPin(r1, "CK");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net clk2
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "clk2");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ clk2 }, n2{ r2:CK }
+    sta::Pin *pin1 =
+        m_sta_network->findPin(m_sta_network->topInstance(), "clk2");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *r2 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r2");
+    sta::Pin *pin2 = m_sta_network->findPin(r2, "CK");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net clk3
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "clk3");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ clk3 }, n2{ r3:CK }
+    sta::Pin *pin1 =
+        m_sta_network->findPin(m_sta_network->topInstance(), "clk3");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *r3 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r3");
+    sta::Pin *pin2 = m_sta_network->findPin(r3, "CK");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net r1q
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "r1q");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ r1:Q }, n2{ u2:A1 }
+    sta::Instance *r1 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r1");
+    sta::Pin *pin1 = m_sta_network->findPin(r1, "Q");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *u2 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u2");
+    sta::Pin *pin2 = m_sta_network->findPin(u2, "A1");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net r2q
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "r2q");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ r2:Q }, n2{ u1:A }
+    sta::Instance *r2 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r2");
+    sta::Pin *pin1 = m_sta_network->findPin(r2, "Q");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *u1 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u1");
+    sta::Pin *pin2 = m_sta_network->findPin(u1, "A");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net u1z
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "u1z");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ u1:Z }, n2{ u2:A2 }
+    sta::Instance *u1 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u1");
+    sta::Pin *pin1 = m_sta_network->findPin(u1, "Z");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *u2 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u2");
+    sta::Pin *pin2 = m_sta_network->findPin(u2, "A2");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net u2z
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "u2z");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ u2:ZN }, n2{ r3:D }
+    sta::Instance *u1 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u2");
+    sta::Pin *pin1 = m_sta_network->findPin(u1, "ZN");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Instance *u2 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r3");
+    sta::Pin *pin2 = m_sta_network->findPin(u2, "D");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  // net out
+  {
+    sta::Net *sta_net =
+        m_sta_network->findNet(m_sta_network->topInstance(), "out");
+    parasitics->deleteReducedParasitics(sta_net, ap);
+    sta::Parasitic *parasitic =
+        parasitics->makeParasiticNetwork(sta_net, false, ap);
+    // n1{ r3:Q }, n2{ out }
+    sta::Instance *r3 =
+        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r3");
+    sta::Pin *pin1 = m_sta_network->findPin(r3, "Q");
+    sta::ParasiticNode *n1 =
+        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
+    sta::Pin *pin2 =
+        m_sta_network->findPin(m_sta_network->topInstance(), "out");
+    sta::ParasiticNode *n2 =
+        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
+    parasitics->incrCap(n1, cap1);
+    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
+    parasitics->incrCap(n2, cap2);
+  }
+
+  m_sta->delaysInvalid();
+
   return true;
 }

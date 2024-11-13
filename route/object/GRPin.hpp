@@ -20,13 +20,14 @@ public:
   GRNet *net() const { return m_net; }
 
   // geo info set
-  void setPosition(const GRPoint &pos) { m_pos = pos; }
+  void setAccessIndex(size_t idx) { m_access_idx = idx; }
   void setAccessPoints(const std::vector<GRPoint> &pts) {
     m_access_points = pts;
   }
 
   // get info get
-  GRPoint position() const { return m_pos; }
+  size_t accessIndex() const { return m_access_idx; }
+  const GRPoint &accessPoint() const { return m_access_points[m_access_idx]; }
   const std::vector<GRPoint> &accessPoints() const { return m_access_points; }
 
 private:
@@ -36,7 +37,7 @@ private:
   GRNet *m_net;
 
   // geo info
-  GRPoint m_pos;
+  size_t m_access_idx;
   std::vector<GRPoint> m_access_points;
 };
 

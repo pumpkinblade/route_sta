@@ -172,7 +172,7 @@ void GridGraph::selectAccessPoints(
     }
   }
   utils::PointT<int> netCenter(bbox.cx(), bbox.cy());
-  for (const GRPin *pin : net->pins()) {
+  for (GRPin *pin : net->pins()) {
     const auto &accessPoints = pin->accessPoints();
     std::pair<int, int> bestAccessDist = {0, std::numeric_limits<int>::max()};
     int bestIndex = -1;
@@ -203,6 +203,7 @@ void GridGraph::selectAccessPoints(
     if (bestAccessDist.first == 0) {
       LOG_WARN("the pin is hard to access.");
     }
+    pin->setAccessIndex(bestIndex);
     const utils::PointT<int> selectedPoint = accessPoints[bestIndex];
     const uint64_t hash = hashCell(selectedPoint.x, selectedPoint.y);
     if (selectedAccessPoints.find(hash) == selectedAccessPoints.end()) {

@@ -13,24 +13,29 @@ MakeWireParasitics::MakeWireParasitics(const GRNetwork *network,
   m_sta_network = m_sta->network();
   m_parasitics = m_sta->parasitics();
   m_arc_delay_calc = m_sta->arcDelayCalc();
+
+  clearParasitics();
 }
 
 void MakeWireParasitics::estimateParasitcs(GRNet *net) {
   sta::Net *sta_net =
       m_sta_network->findNet(m_sta_network->topInstance(), net->name().c_str());
   ASSERT(sta_net != nullptr, "Could not find net `%s`", net->name().c_str());
-  for (sta::Corner *corner : *m_sta->corners()) {
-    NodeRoutePtMap node_map;
 
-    sta::ParasiticAnalysisPt *analysis_point =
-        corner->findParasiticAnalysisPt(sta::MinMax::max());
-    sta::Parasitic *parasitic =
-        m_parasitics->makeParasiticNetwork(sta_net, false, analysis_point);
-    makeRouteParasitics(net, sta_net, corner, analysis_point, parasitic,
-                        node_map);
-    m_arc_delay_calc->reduceParasitic(parasitic, sta_net, corner,
-                                      sta::MinMaxAll::all());
-  }
+  sta::Corner *corner = m_sta->corners()->corners()[0];
+  sta::MinMax *min_max = sta::MinMax::max();
+  sta::ParasiticAnalysisPt *ap = corner->findParasiticAnalysisPt(min_max);
+  m_parasitics->deleteReducedParasitics(sta_net, ap);
+  sta::Parasitic *parasitic =
+      m_parasitics->makeParasiticNetwork(sta_net, false, ap);
+
+  m_node_map.clear();
+  m_resistor_id = 1;
+  makeRouteParasitics(net, sta_net, parasitic);
+  makeParasiticsToPins(net, sta_net, parasitic);
+
+  m_arc_delay_calc->reduceParasitic(parasitic, sta_net, corner,
+                                    sta::MinMaxAll::all());
   m_parasitics->deleteParasiticNetworks(sta_net);
 }
 
@@ -38,7 +43,7 @@ void MakeWireParasitics::clearParasitics() {
   // Remove any existing parasitics.
   m_sta->deleteParasitics();
   // Make separate parasitics for each corner.
-  m_sta->setParasiticAnalysisPts(true);
+  m_sta->setParasiticAnalysisPts(false);
 }
 
 float MakeWireParasitics::getNetSlack(GRNet *net) {
@@ -49,13 +54,9 @@ float MakeWireParasitics::getNetSlack(GRNet *net) {
 }
 
 void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
-                                             sta::Corner *, // only one corner
-                                             sta::ParasiticAnalysisPt *,
-                                             sta::Parasitic *parasitic,
-                                             NodeRoutePtMap &node_map) {
+                                             sta::Parasitic *parasitic) {
   if (net->routingTree() == nullptr)
     return;
-  size_t resistor_id = 1;
   GRTreeNode::preorder(
       net->routingTree(), [&](std::shared_ptr<GRTreeNode> tree) {
         const int min_routing_layer = m_tech->minRoutingLayer();
@@ -64,16 +65,11 @@ void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
               std::minmax(tree->layerIdx, child->layerIdx);
           const auto [init_x, final_x] = std::minmax(tree->x, child->x);
           const auto [init_y, final_y] = std::minmax(tree->y, child->y);
-          sta::ParasiticNode *n1 =
-              (init_layer >= min_routing_layer)
-                  ? ensureParasiticNode(init_x, init_y, init_layer, node_map,
-                                        parasitic, sta_net)
-                  : nullptr;
-          sta::ParasiticNode *n2 =
-              (init_layer >= min_routing_layer)
-                  ? ensureParasiticNode(final_x, final_y, final_layer, node_map,
-                                        parasitic, sta_net)
-                  : nullptr;
+          GRPoint pt1(init_layer, init_x, init_y);
+          GRPoint pt2(final_layer, final_x, final_y);
+          // <net>:<sub_node>
+          sta::ParasiticNode *n1 = ensureParasiticNode(pt1, parasitic, sta_net);
+          sta::ParasiticNode *n2 = ensureParasiticNode(pt2, parasitic, sta_net);
           if (!n1 || !n2)
             continue;
 
@@ -88,27 +84,44 @@ void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
               res += m_tech->cutLayerRes(l);
           }
           m_parasitics->incrCap(n1, 0.5f * cap);
-          m_parasitics->makeResistor(parasitic, resistor_id++, res, n1, n2);
+          m_parasitics->makeResistor(parasitic, m_resistor_id++, res, n1, n2);
           m_parasitics->incrCap(n2, 0.5f * cap);
-          // sta::Unit *res_unit = m_sta->units()->resistanceUnit();
-          // sta::Unit *cap_unit = m_sta->units()->capacitanceUnit();
-          // LOG_DEBUG("res: %s %s, cap: %s %s", res_unit->asString(res),
-          //           res_unit->scaledSuffix(), cap_unit->asString(cap),
-          //           cap_unit->scaledSuffix());
         }
       });
 }
 
-sta::ParasiticNode *MakeWireParasitics::ensureParasiticNode(
-    int x, int y, int layer, NodeRoutePtMap &node_map,
-    sta::Parasitic *parasitic, sta::Net *net) const {
-  auto *parasitics = sta::Sta::sta()->parasitics();
-  GRPoint pin_loc(layer, x, y);
-  if (node_map.find(pin_loc) == node_map.end()) {
-    int id = static_cast<int>(node_map.size());
-    sta::ParasiticNode *node =
-        parasitics->ensureParasiticNode(parasitic, net, id, m_sta_network);
-    node_map.emplace(pin_loc, node);
+void MakeWireParasitics::makeParasiticsToPins(GRNet *net, sta::Net *sta_net,
+                                              sta::Parasitic *parasitic) {
+  for (GRPin *pin : net->pins()) {
+    GRInstance *inst = pin->instance();
+    sta::ParasiticNode *n1 = nullptr, *n2 = nullptr;
+    if (inst != nullptr) {
+      // <instance>:<port>
+      sta::Instance *sta_inst = m_sta_network->findInstanceRelative(
+          m_sta_network->topInstance(), inst->name().c_str());
+      sta::Pin *sta_pin = m_sta_network->findPin(sta_inst, pin->name().c_str());
+      n1 = m_parasitics->ensureParasiticNode(parasitic, sta_pin, m_sta_network);
+      n2 = ensureParasiticNode(pin->accessPoint(), parasitic, sta_net);
+    } else {
+      // <io_port>
+      sta::Pin *sta_pin = m_sta_network->findPin(m_sta_network->topInstance(),
+                                                 pin->name().c_str());
+      n1 = m_parasitics->ensureParasiticNode(parasitic, sta_pin, m_sta_network);
+      n2 = ensureParasiticNode(pin->accessPoint(), parasitic, sta_net);
+    }
+    if (n1 && n2) {
+      m_parasitics->makeResistor(parasitic, m_resistor_id++, 1., n1, n2);
+    }
   }
-  return node_map.at(pin_loc);
+}
+
+sta::ParasiticNode *MakeWireParasitics::ensureParasiticNode(
+    const GRPoint &pt, sta::Parasitic *parasitic, sta::Net *net) {
+  if (m_node_map.find(pt) == m_node_map.end()) {
+    int id = static_cast<int>(m_node_map.size());
+    sta::ParasiticNode *node =
+        m_parasitics->ensureParasiticNode(parasitic, net, id, m_sta_network);
+    m_node_map.emplace(pt, node);
+  }
+  return m_node_map.at(pt);
 }

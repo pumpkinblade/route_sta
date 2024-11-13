@@ -71,6 +71,19 @@ static int write_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
     return TCL_ERROR;
 }
 
+static int test_cmd(ClientData, Tcl_Interp *interp, int objc,
+                    Tcl_Obj *CONST objv[]) {
+  if (objc != 1) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : r_test");
+    return TCL_ERROR;
+  }
+  bool ok = Context::context()->test();
+  if (ok)
+    return TCL_OK;
+  else
+    return TCL_ERROR;
+}
+
 int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "r_read_lef", read_lef_cmd, nullptr, nullptr);
   Tcl_CreateObjCommand(interp, "r_read_def", read_def_cmd, nullptr, nullptr);
@@ -79,5 +92,6 @@ int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "r_run_cugr2", run_cugr2_cmd, nullptr, nullptr);
   Tcl_CreateObjCommand(interp, "r_write_guide", write_guide_cmd, nullptr,
                        nullptr);
+  Tcl_CreateObjCommand(interp, "r_test", test_cmd, nullptr, nullptr);
   return TCL_OK;
 }

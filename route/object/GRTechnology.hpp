@@ -94,8 +94,8 @@ private:
   // layer
   std::vector<std::string> m_layer_name;
   std::vector<LayerDirection> m_layer_direction;
-  std::vector<double> m_layer_cap; // pF/um
-  std::vector<double> m_layer_res; // Ohm/um
+  std::vector<double> m_layer_cap; // F/m
+  std::vector<double> m_layer_res; // Ohm/m
   std::unordered_map<std::string, int> m_layer_idx_map;
   // cut layer
   std::vector<std::string> m_cut_layer_name;
