@@ -55,11 +55,10 @@ float MakeWireParasitics::getNetSlack(GRNet *net) {
 
 void MakeWireParasitics::makeRouteParasitics(GRNet *net, sta::Net *sta_net,
                                              sta::Parasitic *parasitic) {
-  if (net->routingTree() == nullptr)
+  if (net->routingTree() == nullptr || net->routingTree()->children.size() == 0)
     return;
   GRTreeNode::preorder(
       net->routingTree(), [&](std::shared_ptr<GRTreeNode> tree) {
-        const int min_routing_layer = m_tech->minRoutingLayer();
         for (const auto &child : tree->children) {
           const auto [init_layer, final_layer] =
               std::minmax(tree->layerIdx, child->layerIdx);
@@ -110,7 +109,15 @@ void MakeWireParasitics::makeParasiticsToPins(GRNet *net, sta::Net *sta_net,
       n2 = ensureParasiticNode(pin->accessPoint(), parasitic, sta_net);
     }
     if (n1 && n2) {
-      m_parasitics->makeResistor(parasitic, m_resistor_id++, 1., n1, n2);
+      // gcell
+      // double wire_length = m_tech->dbuToMeter(4200 / 2);
+      // double cap = m_tech->layerCap(pin->accessPoint().layerIdx) *
+      // wire_length; double res = m_tech->layerRes(pin->accessPoint().layerIdx)
+      // * wire_length; m_parasitics->incrCap(n1, cap / 2);
+      // m_parasitics->makeResistor(parasitic, m_resistor_id++, res, n1, n2);
+      // m_parasitics->incrCap(n2, cap / 2);
+
+      m_parasitics->makeResistor(parasitic, m_resistor_id++, 0.0, n1, n2);
     }
   }
 }

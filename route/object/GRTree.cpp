@@ -324,35 +324,3 @@ std::shared_ptr<GRTreeNode> trimTree(std::shared_ptr<GRTreeNode> tree,
   });
   return buildTree(segments, tech);
 }
-
-void treeToGuide(std::vector<std::array<int, 6>> &guide,
-                 const std::shared_ptr<GRTreeNode> &tree,
-                 const GRTechnology *tech) {
-  guide.clear();
-  if (tree == nullptr)
-    return;
-  else if (tree->children.size() == 0) {
-    int layer1 =
-        std::min(tree->layerIdx, static_cast<int>(tech->numLayers() - 1));
-    int layer2 =
-        std::min(tree->layerIdx + 1, static_cast<int>(tech->numLayers()));
-    guide.push_back({tree->x, tree->y, layer1, tree->x, tree->y, layer2});
-  } else {
-    GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
-      for (const auto &child : node->children) {
-        if (node->layerIdx == child->layerIdx && node->x == child->x &&
-            node->y == child->y)
-          continue;
-        else
-          guide.push_back({
-              std::min(node->x, child->x),
-              std::min(node->y, child->y),
-              std::min(node->layerIdx, child->layerIdx),
-              std::max(node->x, child->x),
-              std::max(node->y, child->y),
-              std::max(node->layerIdx, child->layerIdx),
-          });
-      }
-    });
-  }
-}

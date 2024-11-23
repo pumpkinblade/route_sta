@@ -20,9 +20,36 @@ GRTechnology::GRTechnology(const LefDatabase *lef_db,
         1e-6 * (lef_db->layers[i].sq_cap * lef_db->layers[i].wire_width +
                 lef_db->layers[i].edge_cap * 2.f);
     m_layer_res[i] =
-        1e6 * lef_db->layers[i].sq_res * lef_db->layers[i].wire_width;
+        1e+6 * lef_db->layers[i].sq_res / lef_db->layers[i].wire_width;
     m_layer_idx_map.emplace(m_layer_name[i], static_cast<int>(i));
   }
+
+  // ohm/um -> ohm/m
+  m_layer_res[0] = 5.432;
+  m_layer_res[1] = 3.574;
+  m_layer_res[2] = 3.574;
+  m_layer_res[3] = 3.004;
+  m_layer_res[4] = 3.004;
+  m_layer_res[5] = 3.004;
+  m_layer_res[6] = 1.076;
+  m_layer_res[7] = 1.076;
+  m_layer_res[8] = 0.432;
+  m_layer_res[9] = 0.432;
+  for (auto &res : m_layer_res)
+    res *= 1e6;
+  // pF/um -> F/m
+  m_layer_cap[0] = 8.494e-05;
+  m_layer_cap[1] = 8.081e-05;
+  m_layer_cap[2] = 7.516e-05;
+  m_layer_cap[3] = 4.832e-05;
+  m_layer_cap[4] = 4.197e-05;
+  m_layer_cap[5] = 3.649e-05;
+  m_layer_cap[6] = 1.946e-05;
+  m_layer_cap[7] = 1.492e-05;
+  m_layer_cap[8] = 7.930e-06;
+  m_layer_cap[9] = 5.806e-06;
+  for (auto &cap : m_layer_cap)
+    cap *= 1e-6;
 
   // cut layer
   LOG_TRACE("init cut layer");
@@ -187,10 +214,16 @@ int GRTechnology::getWireLengthDbu(const GRPoint &p, const GRPoint &q) const {
 
 GRPoint GRTechnology::dbuToGcell(const GRPoint &p) const {
   auto x_it =
-      std::lower_bound(m_grid_points_x.begin(), m_grid_points_x.end(), p.x);
+      std::upper_bound(m_grid_points_x.begin(), m_grid_points_x.end(), p.x);
   auto y_it =
-      std::lower_bound(m_grid_points_y.begin(), m_grid_points_y.end(), p.y);
-  int x = static_cast<int>(std::distance(m_grid_points_x.begin(), x_it));
-  int y = static_cast<int>(std::distance(m_grid_points_y.begin(), y_it));
+      std::upper_bound(m_grid_points_y.begin(), m_grid_points_y.end(), p.y);
+  int x = static_cast<int>(std::distance(m_grid_points_x.begin(), x_it)) - 1;
+  int y = static_cast<int>(std::distance(m_grid_points_y.begin(), y_it)) - 1;
+  return GRPoint(p.layerIdx, x, y);
+}
+
+GRPoint GRTechnology::gcellToDbu(const GRPoint &p) const {
+  int x = (m_grid_points_x[p.x] + m_grid_points_x[p.x + 1]) / 2;
+  int y = (m_grid_points_y[p.y] + m_grid_points_y[p.y + 1]) / 2;
   return GRPoint(p.layerIdx, x, y);
 }

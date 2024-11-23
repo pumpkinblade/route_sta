@@ -20,32 +20,6 @@ static sta::Instance *link(const char *top_cell_name, bool, sta::Report *,
   return Context::context()->linkNetwork(top_cell_name);
 }
 
-bool Context::writeSlack(const std::string &file) {
-  std::ofstream ostream(file);
-  if (!ostream) {
-    m_sta_report->error(70000, "can not open file %s", file.c_str());
-    return false;
-  }
-  if (m_network == nullptr || m_sta_network->topInstance() == nullptr) {
-    m_sta_report->error(70000,
-                        "the Network has not been initialized or linked");
-    return false;
-  }
-
-  m_parasitics_builder->clearParasitics();
-  for (GRNet *net : m_network->nets()) {
-    m_parasitics_builder->estimateParasitcs(net);
-  }
-  sta::Sta::sta()->delaysInvalid();
-
-  for (GRNet *net : m_network->nets()) {
-    float slack = m_parasitics_builder->getNetSlack(net);
-    ostream << net->name() << " " << std::setprecision(2) << slack << '\n';
-  }
-
-  return true;
-}
-
 bool Context::readLef(const std::string &lef_file) {
   if (m_lef_db == nullptr) {
     m_lef_db = std::make_unique<LefDatabase>();
@@ -100,8 +74,7 @@ bool Context::readDef(const std::string &def_file, bool use_routing) {
       m_sta_network->setDirection(port, sta::PortDirection::output());
       break;
     default:
-      m_sta_report->warn(70001, "Unknown direction of io PIN.%s",
-                         iopin.name.c_str());
+      LOG_WARN("Unknown direction of io PIN.%s", iopin.name.c_str());
       break;
     }
   }
@@ -109,79 +82,98 @@ bool Context::readDef(const std::string &def_file, bool use_routing) {
   return true;
 }
 
-sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
-  if (m_sta_library == nullptr) {
-    m_sta_report->error(70000, "libray has not been initialized");
-    return nullptr;
-  }
-  sta::Cell *sta_top_cell =
-      m_sta_network->findCell(m_sta_library, top_cell_name.c_str());
-  if (sta_top_cell == nullptr) {
-    m_sta_report->error(70000, "%s is not a def design.",
-                        top_cell_name.c_str());
-    return nullptr;
+bool Context::readGuide(const std::string &guide_file) {
+  std::ifstream fin(guide_file);
+  if (!fin) {
+    LOG_ERROR("can not open file %s", guide_file.c_str());
+    return false;
   }
 
-  sta::Instance *sta_top_inst =
-      m_sta_network->makeInstance(sta_top_cell, "", nullptr);
-
-  std::unordered_map<sta::Instance *, sta::LibertyCell *> sta_inst_cell_map;
-  for (const GRNet *net : m_network->nets()) {
-    sta::Net *sta_net =
-        m_sta_network->makeNet(net->name().c_str(), sta_top_inst);
-    for (const GRPin *pin : net->pins()) {
-      if (pin->instance() == nullptr) { // IO pin
-        sta::Port *sta_port =
-            m_sta_network->findPort(sta_top_cell, pin->name().c_str());
-        if (sta_port == nullptr) {
-          m_sta_report->error(70000, "io port name PIN.%s not found",
-                              pin->name().c_str());
-          m_sta_network->deleteInstance(sta_top_inst);
-          return nullptr;
-        }
-        if (m_sta_network->findPin(sta_top_inst, sta_port) == nullptr) {
-          sta::Pin *sta_pin =
-              m_sta_network->makePin(sta_top_inst, sta_port, nullptr);
-          m_sta_network->makeTerm(sta_pin, sta_net);
-        }
-        // m_sta_network->connect(sta_top_inst, sta_port, sta_net);
-      } else { // internal pin
-        GRInstance *inst = pin->instance();
-        sta::Instance *sta_inst = m_sta_network->findInstanceRelative(
-            sta_top_inst, inst->name().c_str());
-        // if the instance not found, then create it
-        if (sta_inst == nullptr) {
-          sta::LibertyCell *sta_liberty_cell =
-              m_sta_network->findLibertyCell(inst->libcellName().c_str());
-          if (sta_liberty_cell == nullptr) {
-            m_sta_report->error(70000, "%s is not a liberty libcell",
-                                inst->libcellName().c_str());
-            m_sta_network->deleteInstance(sta_top_inst);
-            return nullptr;
-          }
-          sta_inst = m_sta_network->makeInstance(
-              sta_liberty_cell, inst->name().c_str(), sta_top_inst);
-          sta_inst_cell_map.emplace(sta_inst, sta_liberty_cell);
-        }
-
-        // connect
-        sta::LibertyCell *sta_liberty_cell = sta_inst_cell_map[sta_inst];
-        sta::Cell *sta_cell = reinterpret_cast<sta::Cell *>(sta_liberty_cell);
-        sta::Port *sta_port =
-            m_sta_network->findPort(sta_cell, pin->name().c_str());
-        if (sta_port == nullptr) {
-          m_sta_report->error(70000, "port name %s.%s not found",
-                              m_sta_network->name(sta_cell),
-                              pin->name().c_str());
-          m_sta_network->deleteInstance(sta_top_inst);
-          return nullptr;
-        }
-        m_sta_network->makePin(sta_inst, sta_port, sta_net);
-        // m_sta_network->connect(sta_inst, sta_port, sta_net);
+  std::string line;
+  std::vector<GRNet *> nets;
+  std::vector<std::vector<std::pair<GRPoint, GRPoint>>> net_routes;
+  while (fin.good()) {
+    std::getline(fin, line);
+    if (line == "(" || line.empty() || line == ")")
+      continue;
+    std::istringstream iss(line);
+    std::vector<std::string> words;
+    while (!iss.eof()) {
+      std::string word;
+      iss >> word;
+      words.push_back(word);
+    }
+    if (words.size() == 1) {
+      // new net
+      auto it =
+          std::find_if(m_network->nets().begin(), m_network->nets().end(),
+                       [&](const GRNet *n) { return n->name() == words[0]; });
+      if (it == m_network->nets().end()) {
+        LOG_ERROR("Could find net %s", words[0].c_str());
+        return false;
       }
+      nets.push_back(*it);
+      net_routes.emplace_back();
+    } else {
+      // segment
+      GRPoint p(m_tech->findLayer(words[2]), std::stoi(words[0]),
+                std::stoi(words[1]));
+      GRPoint q(m_tech->findLayer(words[5]), std::stoi(words[3]),
+                std::stoi(words[4]));
+      p = m_tech->dbuToGcell(p);
+      q = m_tech->dbuToGcell(q);
+      net_routes.back().emplace_back(p, q);
     }
   }
-  return sta_top_inst;
+
+  for (size_t i = 0; i < nets.size(); i++) {
+    auto tree = buildTree(net_routes[i], m_tech.get());
+
+    // ensure access point
+    std::vector<int> ap_indices(nets[i]->pins().size(), -1);
+    // check end points
+    for (size_t j = 0; j < nets[i]->pins().size(); j++) {
+      GRPin *pin = nets[i]->pins()[j];
+      for (size_t k = 0; k < pin->accessPoints().size(); k++) {
+        const auto &ap = pin->accessPoints()[k];
+        if (ap.x == tree->x && ap.y == tree->y && ap.layerIdx == tree->layerIdx)
+          ap_indices[j] = static_cast<int>(k);
+      }
+    }
+    // check itermediate points
+    GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
+      for (const auto &child : node->children) {
+        for (size_t j = 0; j < nets[i]->pins().size(); j++) {
+          GRPin *pin = nets[i]->pins()[j];
+          for (size_t k = 0; k < pin->accessPoints().size(); k++) {
+            const auto &ap = pin->accessPoints()[k];
+            auto [init_x, final_x] = std::minmax(node->x, child->x);
+            auto [init_y, final_y] = std::minmax(node->y, child->y);
+            auto [init_z, final_z] =
+                std::minmax(node->layerIdx, child->layerIdx);
+            if (init_x <= ap.x && ap.x <= final_x && init_y <= ap.y &&
+                ap.y <= final_y && init_z <= ap.layerIdx &&
+                ap.layerIdx <= final_z)
+              ap_indices[j] = static_cast<int>(k);
+          }
+        }
+      }
+    });
+
+    for (size_t j = 0; j < nets[i]->pins().size(); j++) {
+      if (ap_indices[j] < 0) {
+        LOG_ERROR("guide of net %s doesn't cover", nets[i]->name().c_str());
+        return false;
+      }
+    }
+
+    for (size_t j = 0; j < nets[i]->pins().size(); j++) {
+      nets[i]->pins()[j]->setAccessIndex(ap_indices[j]);
+    }
+    nets[i]->setRoutingTree(tree);
+  }
+
+  return true;
 }
 
 bool Context::runCugr2() {
@@ -202,259 +194,132 @@ bool Context::runCugr2() {
   return true;
 }
 
-bool Context::writeGuide(const std::string &file) {
-  LOG_TRACE("writing guide");
-  std::ofstream fout(file);
-  std::vector<std::array<int, 6>> guide;
+bool Context::estimateParasitcs() {
+  m_parasitics_builder->clearParasitics();
   for (GRNet *net : m_network->nets()) {
-    treeToGuide(guide, net->routingTree(), m_tech.get());
-    fout << net->name() << std::endl;
-    fout << "(\n";
-    for (const auto &[lx, ly, lz, hx, hy, hz] : guide)
-      fout << lx << " " << ly << " " << lz << " " << hx << " " << hy << " "
-           << hz << "\n";
-    fout << ")\n";
+    m_parasitics_builder->estimateParasitcs(net);
   }
-  fout.close();
+  sta::Sta::sta()->delaysInvalid();
   return true;
 }
 
-bool Context::test() {
-  m_sta->setParasiticAnalysisPts(false);
-  const sta::MinMax *ap_min_max = sta::MinMax::max();
-  const sta::Corner *ap_corner = m_sta->corners()->corners()[0];
-  sta::ParasiticAnalysisPt *ap = ap_corner->findParasiticAnalysisPt(ap_min_max);
-  sta::Parasitics *parasitics = m_sta->parasitics();
-
-  float res1 = 40.f;
-  float cap1 = 0.243 * 1e-12;
-  float cap2 = 0.032 * 1e-12;
-
-  // net in1
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "in1");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ in1 }, n2{ r1:D }
-    sta::Pin *pin1 =
-        m_sta_network->findPin(m_sta_network->topInstance(), "in1");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *r1 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r1");
-    sta::Pin *pin2 = m_sta_network->findPin(r1, "D");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
+bool Context::writeGuide(const std::string &guide_file) {
+  std::ofstream fout(guide_file);
+  for (GRNet *net : m_network->nets()) {
+    fout << net->name() << std::endl;
+    if (net->routingTree() == nullptr) {
+      fout << "(\n)\n";
+    } else if (net->routingTree()->children.size() == 0) {
+      fout << "(\n";
+      const auto &tree = net->routingTree();
+      GRPoint p = m_tech->gcellToDbu(*tree);
+      std::string layer_name = m_tech->layerName(p.layerIdx);
+      fout << p.x << " " << p.y << " " << layer_name << " " << p.x << " " << p.y
+           << " " << layer_name << "\n";
+      fout << ")\n";
+    } else {
+      fout << "(\n";
+      GRTreeNode::preorder(
+          net->routingTree(), [&](std::shared_ptr<GRTreeNode> node) {
+            for (const auto &child : node->children) {
+              auto [p_x, q_x] = std::minmax(node->x, child->x);
+              auto [p_y, q_y] = std::minmax(node->y, child->y);
+              auto [p_z, q_z] = std::minmax(node->layerIdx, child->layerIdx);
+              GRPoint p = m_tech->gcellToDbu(GRPoint(p_z, p_x, p_y));
+              GRPoint q = m_tech->gcellToDbu(GRPoint(q_z, q_x, q_y));
+              std::string p_layer_name = m_tech->layerName(p.layerIdx);
+              std::string q_layer_name = m_tech->layerName(q.layerIdx);
+              fout << p.x << " " << p.y << " " << p_layer_name << " " << q.x
+                   << " " << q.y << " " << q_layer_name << "\n";
+            }
+          });
+      fout << ")\n";
+    }
   }
-
-  // net in2
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "in2");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ in2 }, n2{ r2:D }
-    sta::Pin *pin1 =
-        m_sta_network->findPin(m_sta_network->topInstance(), "in2");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *r2 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r2");
-    sta::Pin *pin2 = m_sta_network->findPin(r2, "D");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net clk1
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "clk1");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ clk1 }, n2{ r1:CK }
-    sta::Pin *pin1 =
-        m_sta_network->findPin(m_sta_network->topInstance(), "clk1");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *r1 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r1");
-    sta::Pin *pin2 = m_sta_network->findPin(r1, "CK");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net clk2
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "clk2");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ clk2 }, n2{ r2:CK }
-    sta::Pin *pin1 =
-        m_sta_network->findPin(m_sta_network->topInstance(), "clk2");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *r2 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r2");
-    sta::Pin *pin2 = m_sta_network->findPin(r2, "CK");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net clk3
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "clk3");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ clk3 }, n2{ r3:CK }
-    sta::Pin *pin1 =
-        m_sta_network->findPin(m_sta_network->topInstance(), "clk3");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *r3 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r3");
-    sta::Pin *pin2 = m_sta_network->findPin(r3, "CK");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net r1q
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "r1q");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ r1:Q }, n2{ u2:A1 }
-    sta::Instance *r1 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r1");
-    sta::Pin *pin1 = m_sta_network->findPin(r1, "Q");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *u2 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u2");
-    sta::Pin *pin2 = m_sta_network->findPin(u2, "A1");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net r2q
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "r2q");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ r2:Q }, n2{ u1:A }
-    sta::Instance *r2 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r2");
-    sta::Pin *pin1 = m_sta_network->findPin(r2, "Q");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *u1 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u1");
-    sta::Pin *pin2 = m_sta_network->findPin(u1, "A");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net u1z
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "u1z");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ u1:Z }, n2{ u2:A2 }
-    sta::Instance *u1 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u1");
-    sta::Pin *pin1 = m_sta_network->findPin(u1, "Z");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *u2 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u2");
-    sta::Pin *pin2 = m_sta_network->findPin(u2, "A2");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net u2z
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "u2z");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ u2:ZN }, n2{ r3:D }
-    sta::Instance *u1 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "u2");
-    sta::Pin *pin1 = m_sta_network->findPin(u1, "ZN");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Instance *u2 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r3");
-    sta::Pin *pin2 = m_sta_network->findPin(u2, "D");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  // net out
-  {
-    sta::Net *sta_net =
-        m_sta_network->findNet(m_sta_network->topInstance(), "out");
-    parasitics->deleteReducedParasitics(sta_net, ap);
-    sta::Parasitic *parasitic =
-        parasitics->makeParasiticNetwork(sta_net, false, ap);
-    // n1{ r3:Q }, n2{ out }
-    sta::Instance *r3 =
-        m_sta_network->findInstanceRelative(m_sta_network->topInstance(), "r3");
-    sta::Pin *pin1 = m_sta_network->findPin(r3, "Q");
-    sta::ParasiticNode *n1 =
-        parasitics->ensureParasiticNode(parasitic, pin1, m_sta_network);
-    sta::Pin *pin2 =
-        m_sta_network->findPin(m_sta_network->topInstance(), "out");
-    sta::ParasiticNode *n2 =
-        parasitics->ensureParasiticNode(parasitic, pin2, m_sta_network);
-    parasitics->incrCap(n1, cap1);
-    parasitics->makeResistor(parasitic, 1, res1, n1, n2);
-    parasitics->incrCap(n2, cap2);
-  }
-
-  m_sta->delaysInvalid();
-
   return true;
+}
+
+bool Context::writeSlack(const std::string &slack_file) {
+  std::ofstream fout(slack_file);
+  if (!fout) {
+    LOG_ERROR("can not open file %s", slack_file.c_str());
+    return false;
+  }
+  for (GRNet *net : m_network->nets()) {
+    float slack = m_parasitics_builder->getNetSlack(net);
+    fout << net->name() << " " << std::setprecision(3) << slack << '\n';
+  }
+  return true;
+}
+
+sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
+  if (m_sta_library == nullptr) {
+    LOG_ERROR("libray has not been initialized");
+    return nullptr;
+  }
+  sta::Cell *sta_top_cell =
+      m_sta_network->findCell(m_sta_library, top_cell_name.c_str());
+  if (sta_top_cell == nullptr) {
+    LOG_ERROR("%s is not a def design.", top_cell_name.c_str());
+    return nullptr;
+  }
+
+  sta::Instance *sta_top_inst =
+      m_sta_network->makeInstance(sta_top_cell, "", nullptr);
+
+  std::unordered_map<sta::Instance *, sta::LibertyCell *> sta_inst_cell_map;
+  for (const GRNet *net : m_network->nets()) {
+    sta::Net *sta_net =
+        m_sta_network->makeNet(net->name().c_str(), sta_top_inst);
+    for (const GRPin *pin : net->pins()) {
+      if (pin->instance() == nullptr) { // IO pin
+        sta::Port *sta_port =
+            m_sta_network->findPort(sta_top_cell, pin->name().c_str());
+        if (sta_port == nullptr) {
+          LOG_ERROR("io port name PIN.%s not found", pin->name().c_str());
+          m_sta_network->deleteInstance(sta_top_inst);
+          return nullptr;
+        }
+        if (m_sta_network->findPin(sta_top_inst, sta_port) == nullptr) {
+          sta::Pin *sta_pin =
+              m_sta_network->makePin(sta_top_inst, sta_port, nullptr);
+          m_sta_network->makeTerm(sta_pin, sta_net);
+        }
+        // m_sta_network->connect(sta_top_inst, sta_port, sta_net);
+      } else { // internal pin
+        GRInstance *inst = pin->instance();
+        sta::Instance *sta_inst = m_sta_network->findInstanceRelative(
+            sta_top_inst, inst->name().c_str());
+        // if the instance not found, then create it
+        if (sta_inst == nullptr) {
+          sta::LibertyCell *sta_liberty_cell =
+              m_sta_network->findLibertyCell(inst->libcellName().c_str());
+          if (sta_liberty_cell == nullptr) {
+            LOG_ERROR("%s is not a liberty libcell",
+                      inst->libcellName().c_str());
+            m_sta_network->deleteInstance(sta_top_inst);
+            return nullptr;
+          }
+          sta_inst = m_sta_network->makeInstance(
+              sta_liberty_cell, inst->name().c_str(), sta_top_inst);
+          sta_inst_cell_map.emplace(sta_inst, sta_liberty_cell);
+        }
+
+        // connect
+        sta::LibertyCell *sta_liberty_cell = sta_inst_cell_map[sta_inst];
+        sta::Cell *sta_cell = reinterpret_cast<sta::Cell *>(sta_liberty_cell);
+        sta::Port *sta_port =
+            m_sta_network->findPort(sta_cell, pin->name().c_str());
+        if (sta_port == nullptr) {
+          LOG_ERROR("port name %s.%s not found", m_sta_network->name(sta_cell),
+                    pin->name().c_str());
+          m_sta_network->deleteInstance(sta_top_inst);
+          return nullptr;
+        }
+        m_sta_network->makePin(sta_inst, sta_port, sta_net);
+        // m_sta_network->connect(sta_inst, sta_port, sta_net);
+      }
+    }
+  }
+  return sta_top_inst;
 }

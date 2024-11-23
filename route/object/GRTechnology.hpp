@@ -64,10 +64,11 @@ public:
   }
 
   // grid
-  std::vector<GRPoint> overlapGcells(const utils::BoxOnLayerT<int> &box) const;
-  GRPoint dbuToGcell(const GRPoint &p) const;
   int numGcellX() const { return static_cast<int>(m_grid_points_x.size() - 1); }
   int numGcellY() const { return static_cast<int>(m_grid_points_y.size() - 1); }
+  GRPoint gcellToDbu(const GRPoint &p) const;
+  GRPoint dbuToGcell(const GRPoint &p) const;
+  std::vector<GRPoint> overlapGcells(const utils::BoxOnLayerT<int> &box) const;
   int edgeLengthDbuX(int x) const {
     return m_edge_length_x[static_cast<size_t>(x)];
   }

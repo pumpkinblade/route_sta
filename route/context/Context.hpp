@@ -20,12 +20,13 @@ public:
 
   bool readLef(const std::string &lef_file);
   bool readDef(const std::string &def_file, bool use_routing);
+  bool readGuide(const std::string &guide_file);
+
   bool runCugr2();
+  bool estimateParasitcs();
 
-  bool writeGuide(const std::string &file);
-  bool writeSlack(const std::string &file);
-
-  bool test();
+  bool writeGuide(const std::string &guide_file);
+  bool writeSlack(const std::string &slack_file);
 
   sta::Instance *linkNetwork(const std::string &top_cell_name);
 
