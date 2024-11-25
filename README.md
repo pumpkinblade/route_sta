@@ -4,12 +4,12 @@ See https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
 
 or
 ```shell
-sudo apt install build-essential cmake tcl swig bison flex libeigen3-dev
+sudo apt install build-essential cmake tcl-dev swig bison flex libeigen3-dev
 wget https://raw.githubusercontent.com/davidkebo/cudd/refs/heads/main/cudd_versions/cudd-3.0.0.tar.gz
 tar -zxvf cudd-3.0.0.tar.gz
 cd cudd-3.0.0
 ./configure
-make install
+sudo make install
 ```
 You can use the "configure --prefix" option to install CUDD in a different directory
 
