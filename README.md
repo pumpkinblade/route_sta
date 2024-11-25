@@ -5,17 +5,17 @@ See https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
 or
 ```shell
 sudo apt install build-essential cmake tcl swig bison flex libeigen3-dev
-curl https://github.com/davidkebo/cudd/blob/main/cudd_versions/cudd-3.0.0.tar.gz -o cudd-3.0.0.tar.gz
+wget https://raw.githubusercontent.com/davidkebo/cudd/refs/heads/main/cudd_versions/cudd-3.0.0.tar.gz
 tar -zxvf cudd-3.0.0.tar.gz
 cd cudd-3.0.0
 ./configure
-make
+make install
 ```
-You can use the "configure --prefix" option and "make install" to install CUDD in a different directory
+You can use the "configure --prefix" option to install CUDD in a different directory
 
 ## 0.2 LEMON Graph Library
 ```shell
-curl http://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.tar.gz -o lemon-1.3.1.tar.gz
+wget http://lemon.cs.elte.hu/pub/sources/lemon-1.3.1.tar.gz
 tar -zxvf lemon-1.3.1.tar.gz
 cd lemon-1.3.1
 cmake -B build
@@ -63,6 +63,18 @@ r_read_def
 | `lef_file` | Path to the lef file. |
 | `def_file` | Path to the def file. |
 | `use_routing` | Flag to read the routing information from def file. |
+
+## Read guide file
+### Command
+```tcl
+r_read_guide
+  [guide_file]
+```
+
+### Option
+| Name | Description |
+| ----- | ----- |
+| `guide_file` | Path to the guide file. |
 
 ## Write net slack to file
 ### Command
