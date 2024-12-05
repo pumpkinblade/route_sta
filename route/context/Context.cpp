@@ -20,6 +20,39 @@ static sta::Instance *link(const char *top_cell_name, bool, sta::Report *,
   return Context::context()->linkNetwork(top_cell_name);
 }
 
+bool Context::test() {
+  std::vector<std::string> net_names = {"clk",
+                                        "clknet_0_clk",
+                                        "clknet_2_0__leaf_clk",
+                                        "clknet_2_1__leaf_clk",
+                                        "clknet_2_2__leaf_clk",
+                                        "clknet_2_3__leaf_clk"};
+  for (const auto &name : net_names) {
+    GRNet *net = *std::find_if(
+        m_network->nets().begin(), m_network->nets().end(),
+        [&name](const GRNet *net) { return net->name() == name; });
+    std::cout << "pin of " << name << "\n";
+    for (const GRPin *pin : net->pins()) {
+      if (pin->instance() == nullptr)
+        std::cout << "( PIN " << pin->name() << " )\n";
+      else
+        std::cout << "( " << pin->instance()->name() << " " << pin->name()
+                  << " )\n";
+    }
+    std::cout << "\n";
+    // std::cout << "routing tree of " << name << "\n";
+    // GRTreeNode::preorder(
+    //     net->routingTree(), [](std::shared_ptr<GRTreeNode> node) {
+    //       for (auto child : node->children) {
+    //         std::printf("(%d %d %d) -> (%d %d %d)\n", node->x, node->y,
+    //                     node->layerIdx, child->x, child->y, child->layerIdx);
+    //       }
+    //     });
+    // std::cout << "\n";
+  }
+  return true;
+}
+
 bool Context::readLef(const std::string &lef_file) {
   if (m_lef_db == nullptr) {
     m_lef_db = std::make_unique<LefDatabase>();

@@ -110,14 +110,18 @@ void MakeWireParasitics::makeParasiticsToPins(GRNet *net, sta::Net *sta_net,
     }
     if (n1 && n2) {
       // gcell
-      // double wire_length = m_tech->dbuToMeter(4200 / 2);
-      // double cap = m_tech->layerCap(pin->accessPoint().layerIdx) *
-      // wire_length; double res = m_tech->layerRes(pin->accessPoint().layerIdx)
-      // * wire_length; m_parasitics->incrCap(n1, cap / 2);
-      // m_parasitics->makeResistor(parasitic, m_resistor_id++, res, n1, n2);
-      // m_parasitics->incrCap(n2, cap / 2);
+      auto gcell_center = m_tech->gcellToDbu(pin->accessPoint());
+      auto pin_center = pin->positionDbu(m_tech);
+      int dist_dbu = std::abs(gcell_center.x - pin_center.x) +
+                     std::abs(gcell_center.y - pin_center.y);
+      double wire_length = m_tech->dbuToMeter(dist_dbu);
+      double cap = m_tech->layerCap(pin->accessPoint().layerIdx) * wire_length;
+      double res = m_tech->layerRes(pin->accessPoint().layerIdx) * wire_length;
+      m_parasitics->incrCap(n1, cap / 2);
+      m_parasitics->makeResistor(parasitic, m_resistor_id++, res, n1, n2);
+      m_parasitics->incrCap(n2, cap / 2);
 
-      m_parasitics->makeResistor(parasitic, m_resistor_id++, 0.0, n1, n2);
+      // m_parasitics->makeResistor(parasitic, m_resistor_id++, 0.0, n1, n2);
     }
   }
 }

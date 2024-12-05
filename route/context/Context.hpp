@@ -18,6 +18,8 @@ public:
   Context() = default;
   static Context *context() { return s_ctx.get(); }
 
+  bool test();
+
   bool readLef(const std::string &lef_file);
   bool readDef(const std::string &def_file, bool use_routing);
   bool readGuide(const std::string &guide_file);

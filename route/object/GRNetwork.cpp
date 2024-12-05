@@ -152,6 +152,7 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
           def_inst.lx + tech->microToDbu(lef_libcell.size_x),
           def_inst.ly + tech->microToDbu(lef_libcell.size_y));
       std::vector<GRPoint> access_points;
+      std::vector<utils::BoxOnLayerT<int>> boxes;
       for (size_t j = 0; j < lef_libpin.layers.size(); j++) {
         utils::BoxT<int> pin_box(tech->microToDbu(lef_libpin.boxes[j].lx()),
                                  tech->microToDbu(lef_libpin.boxes[j].ly()),
@@ -162,12 +163,14 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
             getInternalPinBox(def_inst.orient, cell_box, pin_box));
         std::vector<GRPoint> pts = tech->overlapGcells(box);
         access_points.insert(access_points.end(), pts.begin(), pts.end());
+        boxes.push_back(box);
       }
       std::sort(access_points.begin(), access_points.end());
       access_points.erase(
           std::unique(access_points.begin(), access_points.end()),
           access_points.end());
       pin->setAccessPoints(access_points);
+      pin->setBoxexOnLayerDbu(boxes);
     }
     // handle io pins
     for (const auto &pin_name : def_net.iopins) {
@@ -181,6 +184,7 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
       size_t idx = iopin_name_idx_map.at(pin_name);
       const auto &def_iopin = def_db->iopins[idx];
       std::vector<GRPoint> access_points;
+      std::vector<utils::BoxOnLayerT<int>> boxes;
       for (size_t j = 0; j < def_iopin.layers.size(); j++) {
         utils::BoxOnLayerT<int> box(tech->findLayer(def_iopin.layers[j]),
                                     getIoPinBox(def_iopin.orients[j],
@@ -188,12 +192,14 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
                                                 def_iopin.boxes[j]));
         std::vector<GRPoint> pts = tech->overlapGcells(box);
         access_points.insert(access_points.end(), pts.begin(), pts.end());
+        boxes.push_back(box);
       }
       std::sort(access_points.begin(), access_points.end());
       access_points.erase(
           std::unique(access_points.begin(), access_points.end()),
           access_points.end());
       pin->setAccessPoints(access_points);
+      pin->setBoxexOnLayerDbu(boxes);
     }
   }
 

@@ -184,20 +184,6 @@ GRTechnology::overlapGcells(const utils::BoxOnLayerT<int> &box) const {
       pts.emplace_back(box.layerIdx, x, y);
     }
   }
-  // if (pts.size() == 0 || pts.size() > 10) {
-  //   LOG_ERROR("0 gcell pin");
-  //   std::printf("[%d, %d] x [%d, %d]\n", box.lx(), box.hx(), box.ly(),
-  //               box.hy());
-  //   std::printf("      ");
-  //   for (auto x : m_grid_points_x) {
-  //     std::printf("%5d ", x);
-  //   }
-  //   std::printf("\n");
-  //   for (auto y : m_grid_points_y) {
-  //     std::printf("%5d\n", y);
-  //   }
-  //   std::cout << "\n";
-  // }
   return pts;
 }
 
@@ -226,4 +212,13 @@ GRPoint GRTechnology::gcellToDbu(const GRPoint &p) const {
   int x = (m_grid_points_x[p.x] + m_grid_points_x[p.x + 1]) / 2;
   int y = (m_grid_points_y[p.y] + m_grid_points_y[p.y + 1]) / 2;
   return GRPoint(p.layerIdx, x, y);
+}
+
+utils::BoxOnLayerT<int> GRTechnology::gcellToBox(const GRPoint &p) const {
+  int l = p.layerIdx;
+  int lx = m_grid_points_x[p.x];
+  int hx = m_grid_points_x[p.x + 1];
+  int ly = m_grid_points_y[p.y];
+  int hy = m_grid_points_y[p.y + 1];
+  return utils::BoxOnLayerT<int>(l, lx, ly, hx, hy);
 }
