@@ -1,5 +1,5 @@
-#ifndef __GR_PIN_HPP__
-#define __GR_PIN_HPP__
+#pragma once
+
 
 #include "../util/common.hpp"
 #include "GRTree.hpp"
@@ -51,4 +51,4 @@ private:
   std::vector<utils::BoxOnLayerT<int>> m_boxes_on_layer_dbu;
 };
 
-#endif
+

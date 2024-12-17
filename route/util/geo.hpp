@@ -1,5 +1,5 @@
-#ifndef __GEO_HPP__
-#define __GEO_HPP__
+#pragma once
+
 
 #include <algorithm>
 #include <cassert>
@@ -440,4 +440,4 @@ public:
 
 } // namespace utils
 
-#endif
+

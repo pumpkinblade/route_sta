@@ -1,5 +1,5 @@
-#ifndef __CONTEXT_HPP__
-#define __CONTEXT_HPP__
+#pragma once
+
 
 #include "../object/GRNetwork.hpp"
 #include "../object/GRTechnology.hpp"
@@ -47,4 +47,4 @@ private:
   // std::unique_ptr<DefDatabase> m_def_db;
 };
 
-#endif
+

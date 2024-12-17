@@ -1,5 +1,5 @@
-#ifndef __MAKE_WIRE_PARASITICS_HPP__
-#define __MAKE_WIRE_PARASITICS_HPP__
+#pragma once
+
 
 #include "../object/GRNetwork.hpp"
 #include "../object/GRTechnology.hpp"
@@ -39,4 +39,4 @@ private:
   size_t m_resistor_id;
 };
 
-#endif
+

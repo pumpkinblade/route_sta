@@ -1,5 +1,5 @@
-#ifndef __GR_INSTANCE_HPP__
-#define __GR_INSTANCE_HPP__
+#pragma once
+
 
 #include "GRPin.hpp"
 #include <vector>
@@ -25,4 +25,4 @@ private:
   // instance's geo info are useless
 };
 
-#endif
+

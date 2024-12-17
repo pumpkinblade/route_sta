@@ -1,5 +1,5 @@
-#ifndef __LOG_HPP__
-#define __LOG_HPP__
+#pragma once
+
 
 #include <cstdio>
 
@@ -51,4 +51,4 @@ double eplaseTime();
 
 #define PANIC(fmt, ...) ASSERT(0, fmt, ##__VA_ARGS__)
 
-#endif
+

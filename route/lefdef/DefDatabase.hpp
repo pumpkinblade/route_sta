@@ -1,5 +1,5 @@
-#ifndef __DEF_DATABASE_HPP__
-#define __DEF_DATABASE_HPP__
+#pragma once
+
 
 #include "../util/common.hpp"
 #include "../util/geo.hpp"
@@ -77,4 +77,4 @@ struct DefDatabase {
   // bool read(const char *def_file, bool use_routing);
   bool read(const char *def_file, bool use_routing);
 };
-#endif
+

@@ -1,5 +1,5 @@
-#ifndef __GR_TREE_HPP__
-#define __GR_TREE_HPP__
+#pragma once
+
 
 #include "../util/geo.hpp"
 #include <functional>
@@ -35,4 +35,4 @@ buildTree(const std::vector<std::pair<GRPoint, GRPoint>> &segs,
 std::shared_ptr<GRTreeNode> trimTree(std::shared_ptr<GRTreeNode> tree,
                                      const GRTechnology *tech);
 
-#endif
+

@@ -1,5 +1,5 @@
-#ifndef __GR_NET_HPP__
-#define __GR_NET_HPP__
+#pragma once
+
 
 #include "GRPin.hpp"
 #include "GRTree.hpp"
@@ -25,4 +25,4 @@ private:
   float m_slack;
 };
 
-#endif
+

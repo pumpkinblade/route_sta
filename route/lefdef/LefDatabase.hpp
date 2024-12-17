@@ -1,5 +1,5 @@
-#ifndef __LEF_DATABASE_HPP__
-#define __LEF_DATABASE_HPP__
+#pragma once
+
 
 #include "../util/common.hpp"
 #include "../util/geo.hpp"
@@ -53,4 +53,4 @@ struct LefDatabase {
   bool read(const char *lef_file);
 };
 
-#endif
+

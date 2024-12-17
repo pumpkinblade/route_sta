@@ -1,5 +1,5 @@
-#ifndef __GR_NETWORK_HPP__
-#define __GR_NETWORK_HPP__
+#pragma once
+
 
 #include "GRInstance.hpp"
 #include "GRNet.hpp"
@@ -37,4 +37,4 @@ private:
   std::vector<GRNet *> m_snets; // power/ground
 };
 
-#endif
+

@@ -1,5 +1,5 @@
-#ifndef __GR_TECHNOLOGY_HPP__
-#define __GR_TECHNOLOGY_HPP__
+#pragma once
+
 
 #include "../util/common.hpp"
 #include "../util/geo.hpp"
@@ -114,4 +114,4 @@ private:
   std::vector<std::vector<std::vector<float>>> m_edge_capcity;
 };
 
-#endif
+
