@@ -15,22 +15,23 @@ class Library;
 
 class Context {
 public:
-  Context() = default;
-  static Context *context() { return s_ctx.get(); }
+  static Context *ctx();
+
+  Context();
 
   bool test();
 
-  bool readLef(const std::string &lef_file);
-  bool readDef(const std::string &def_file, bool use_routing);
-  bool readGuide(const std::string &guide_file);
+  bool readLef(const char *lef_file);
+  bool readDef(const char *def_file);
+  bool readGuide(const char *guide_file);
+  bool writeGuide(const char *guide_file);
+  bool writeSlack(const char *slack_file);
+
+  bool linkDesign(const char *design_name);
+  sta::Instance *linkNetwork(const char *top_cell_name);
 
   bool runCugr2();
   bool estimateParasitcs();
-
-  bool writeGuide(const std::string &guide_file);
-  bool writeSlack(const std::string &slack_file);
-
-  sta::Instance *linkNetwork(const std::string &top_cell_name);
 
   GRNetwork *network() { return m_network.get(); }
   GRTechnology *technology() { return m_tech.get(); }
@@ -41,10 +42,6 @@ private:
   std::unique_ptr<GRNetwork> m_network;
   std::unique_ptr<GRTechnology> m_tech;
   std::unique_ptr<MakeWireParasitics> m_parasitics_builder;
-  sta::Report *m_sta_report;
-  sta::NetworkReader *m_sta_network;
-  sta::Library *m_sta_library;
-  sta::Sta *m_sta;
 
   std::unique_ptr<LefDatabase> m_lef_db;
   // std::unique_ptr<DefDatabase> m_def_db;

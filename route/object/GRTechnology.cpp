@@ -8,7 +8,6 @@
 GRTechnology::GRTechnology(const LefDatabase *lef_db,
                            const DefDatabase *def_db) {
   // layer
-  LOG_TRACE("init layer");
   m_layer_name.resize(lef_db->layers.size());
   m_layer_direction.resize(lef_db->layers.size());
   m_layer_cap.resize(lef_db->layers.size());
@@ -25,34 +24,30 @@ GRTechnology::GRTechnology(const LefDatabase *lef_db,
   }
 
   // ohm/um -> ohm/m
-  m_layer_res[0] = 5.432;
-  m_layer_res[1] = 3.574;
-  m_layer_res[2] = 3.574;
-  m_layer_res[3] = 3.004;
-  m_layer_res[4] = 3.004;
-  m_layer_res[5] = 3.004;
-  m_layer_res[6] = 1.076;
-  m_layer_res[7] = 1.076;
-  m_layer_res[8] = 0.432;
-  m_layer_res[9] = 0.432;
-  for (auto &res : m_layer_res)
-    res *= 1e6;
+  m_layer_res[0] = 5.432 * 1e6;
+  m_layer_res[1] = 3.574 * 1e6;
+  m_layer_res[2] = 3.574 * 1e6;
+  m_layer_res[3] = 3.004 * 1e6;
+  m_layer_res[4] = 3.004 * 1e6;
+  m_layer_res[5] = 3.004 * 1e6;
+  m_layer_res[6] = 1.076 * 1e6;
+  m_layer_res[7] = 1.076 * 1e6;
+  m_layer_res[8] = 0.432 * 1e6;
+  m_layer_res[9] = 0.432 * 1e6;
+
   // pF/um -> F/m
-  m_layer_cap[0] = 8.494e-05;
-  m_layer_cap[1] = 8.081e-05;
-  m_layer_cap[2] = 7.516e-05;
-  m_layer_cap[3] = 4.832e-05;
-  m_layer_cap[4] = 4.197e-05;
-  m_layer_cap[5] = 3.649e-05;
-  m_layer_cap[6] = 1.946e-05;
-  m_layer_cap[7] = 1.492e-05;
-  m_layer_cap[8] = 7.930e-06;
-  m_layer_cap[9] = 5.806e-06;
-  for (auto &cap : m_layer_cap)
-    cap *= 1e-6;
+  m_layer_cap[0] = 8.494e-05 * 1e-6;
+  m_layer_cap[1] = 8.081e-05 * 1e-6;
+  m_layer_cap[2] = 7.516e-05 * 1e-6;
+  m_layer_cap[3] = 4.832e-05 * 1e-6;
+  m_layer_cap[4] = 4.197e-05 * 1e-6;
+  m_layer_cap[5] = 3.649e-05 * 1e-6;
+  m_layer_cap[6] = 1.946e-05 * 1e-6;
+  m_layer_cap[7] = 1.492e-05 * 1e-6;
+  m_layer_cap[8] = 7.930e-06 * 1e-6;
+  m_layer_cap[9] = 5.806e-06 * 1e-6;
 
   // cut layer
-  LOG_TRACE("init cut layer");
   m_cut_layer_name.resize(lef_db->cut_layers.size());
   m_cut_layer_res.resize(lef_db->cut_layers.size());
   for (size_t i = 0; i < lef_db->cut_layers.size(); i++) {
@@ -62,12 +57,10 @@ GRTechnology::GRTechnology(const LefDatabase *lef_db,
   }
 
   // dbu
-  LOG_TRACE("init dbu");
   m_dbu = def_db->dbu;
   m_inv_dbu = 1.f / static_cast<double>(m_dbu);
 
   // grid
-  LOG_TRACE("init grid");
   m_grid_points_x.clear();
   m_grid_points_y.clear();
   for (const auto &def_grid : def_db->gcell_grids) {
@@ -98,7 +91,6 @@ GRTechnology::GRTechnology(const LefDatabase *lef_db,
       m_grid_points_y.end());
 
   // edge length
-  LOG_TRACE("init edge length");
   m_edge_length_acc_x.push_back(0);
   for (size_t i = 0; i + 2 < m_grid_points_x.size(); i++) {
     int x1 = (m_grid_points_x[i] + m_grid_points_x[i + 1]) / 2;
@@ -115,7 +107,6 @@ GRTechnology::GRTechnology(const LefDatabase *lef_db,
   }
 
   // compute capcity
-  LOG_TRACE("init edge capacity");
   size_t num_cell_x = m_grid_points_x.size() - 1;
   size_t num_cell_y = m_grid_points_y.size() - 1;
   size_t num_layer = m_layer_name.size();

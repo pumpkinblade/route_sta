@@ -34,6 +34,7 @@ private:
   std::vector<GRNet *> m_nets;
   std::vector<GRInstance *> m_instances;
   std::vector<GRPin *> m_pins;
+  std::vector<GRNet *> m_snets; // power/ground
 };
 
 #endif

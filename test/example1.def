@@ -5,11 +5,11 @@ DESIGN top ;
 UNITS DISTANCE MICRONS 2000 ;
 DIEAREA ( 0 0 ) ( 65480 65480 ) ;
 COMPONENTS 5 ;
-    - r1 DFF_X1 + PLACED ( 26980 19600 ) N ;
-    - r2 DFF_X1 + PLACED ( 36860 5600 ) FS ;
-    - u1 BUF_X1 + PLACED ( 29260 2800 ) N ;
-    - u2 AND2_X1 + PLACED ( 46360 8400 ) N ;
-    - r3 DFF_X1 + PLACED ( 41800 56000 ) FS ;
+    - sca/r1 DFF_X1 + PLACED ( 26980 19600 ) N ;
+    - sca/r2 DFF_X1 + PLACED ( 36860 5600 ) FS ;
+    - sca/u1 BUF_X1 + PLACED ( 29260 2800 ) N ;
+    - sca/u2 AND2_X1 + PLACED ( 46360 8400 ) N ;
+    - sca/r3 DFF_X1 + PLACED ( 41800 56000 ) FS ;
 END COMPONENTS
 PINS 6 ;
     - in1 + NET in1 + DIRECTION INPUT + USE SIGNAL
@@ -38,15 +38,15 @@ PINS 6 ;
         + PLACED ( 65340 10220 ) N ;
 END PINS
 NETS 10 ;
-    - in1 ( PIN in1 ) ( r1 D ) ;
-    - in2 ( PIN in2 ) ( r2 D ) ;
-    - clk1 ( PIN clk1 ) ( r1 CK ) ;
-    - clk2 ( PIN clk2 ) ( r2 CK ) ;
-    - clk3 ( PIN clk3 ) ( r3 CK ) ;
-    - r2q ( r2 Q ) ( u1 A ) ;
-    - r1q ( r1 Q ) ( u2 A1 ) ;
-    - u1z ( u1 Z ) ( u2 A2 ) ;
-    - u2z ( u2 ZN ) ( r3 D ) ;
-    - out ( r3 Q ) ( PIN out ) ;
+    - in1 ( PIN in1 ) ( sca/r1 D ) ;
+    - in2 ( PIN in2 ) ( sca/r2 D ) ;
+    - clk1 ( PIN clk1 ) ( sca/r1 CK ) ;
+    - clk2 ( PIN clk2 ) ( sca/r2 CK ) ;
+    - clk3 ( PIN clk3 ) ( sca/r3 CK ) ;
+    - r2q ( sca/r2 Q ) ( sca/u1 A ) ;
+    - r1q ( sca/r1 Q ) ( sca/u2 A1 ) ;
+    - u1z ( sca/u1 Z ) ( sca/u2 A2 ) ;
+    - u2z ( sca/u2 ZN ) ( sca/r3 D ) ;
+    - out ( sca/r3 Q ) ( PIN out ) ;
 END NETS
 END DESIGN

@@ -83,7 +83,6 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
                      const GRTechnology *tech) {
   m_design_name = def_db->design_name;
 
-  LOG_TRACE("interest iopin and def_cell");
   std::unordered_set<std::string> interest_iopin;
   std::unordered_set<std::string> interest_inst;
   for (const auto &def_net : def_db->nets) {
@@ -95,7 +94,6 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
     }
   }
 
-  LOG_TRACE("iopin/inst/libcell name -> idx map");
   std::unordered_map<std::string, size_t> iopin_name_idx_map;
   std::unordered_map<std::string, size_t> inst_name_idx_map;
   std::unordered_map<std::string, size_t> libcell_name_idx_map;
@@ -117,7 +115,6 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
       map.emplace(lef_db->libcells[i].pins[j].name, j);
   }
 
-  LOG_TRACE("create nets");
   std::unordered_map<std::string, GRInstance *> inst_name_map;
   for (const auto &def_net : def_db->nets) {
     GRNet *net = createNet(def_net.name);
@@ -147,6 +144,7 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
       size_t libpin_idx =
           libpin_name_idx_map_per_libcell[libcell_idx].at(pin_name);
       const auto &lef_libpin = lef_libcell.pins[libpin_idx];
+      pin->setDirection(lef_libpin.direction);
       utils::BoxT<int> cell_box(
           def_inst.lx, def_inst.ly,
           def_inst.lx + tech->microToDbu(lef_libcell.size_x),
@@ -183,6 +181,7 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
       // compute pin's access points
       size_t idx = iopin_name_idx_map.at(pin_name);
       const auto &def_iopin = def_db->iopins[idx];
+      pin->setDirection(def_iopin.direction);
       std::vector<GRPoint> access_points;
       std::vector<utils::BoxOnLayerT<int>> boxes;
       for (size_t j = 0; j < def_iopin.layers.size(); j++) {
@@ -203,7 +202,6 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
     }
   }
 
-  LOG_TRACE("map via to cut_layer");
   std::unordered_map<std::string, int> via_layer_map;
   for (const auto &lef_via : lef_db->vias) {
     int cut_layer_idx = -1;
@@ -215,7 +213,6 @@ GRNetwork::GRNetwork(const LefDatabase *lef_db, const DefDatabase *def_db,
     via_layer_map.emplace(lef_via.name, cut_layer_idx);
   }
 
-  LOG_TRACE("create routing");
   for (size_t i = 0; i < def_db->nets.size(); i++) {
     std::vector<std::pair<GRPoint, GRPoint>> segs;
     for (const DefSegment &def_seg : def_db->route_per_net[i]) {

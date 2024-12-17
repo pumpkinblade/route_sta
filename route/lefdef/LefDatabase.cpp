@@ -111,7 +111,7 @@ bool LefDatabase::clear() {
   return true;
 }
 
-bool LefDatabase::read(const std::string &lef_file) {
+bool LefDatabase::read(const char *lef_file) {
   int res = 0;
   lefrInit();
   lefrSetUserData(this);
@@ -120,11 +120,11 @@ bool LefDatabase::read(const std::string &lef_file) {
   lefrSetMacroBeginCbk(lefLibCellBeginCbk);
   lefrSetMacroCbk(lefLibCellCbk);
   lefrSetPinCbk(lefPinCbk);
-  FILE *lef_stream = std::fopen(lef_file.c_str(), "r");
+  FILE *lef_stream = std::fopen(lef_file, "r");
   if (lef_stream == nullptr) {
     return false;
   }
-  res = lefrRead(lef_stream, lef_file.c_str(), this);
+  res = lefrRead(lef_stream, lef_file, this);
   std::fclose(lef_stream);
   if (res != 0) {
     return false;

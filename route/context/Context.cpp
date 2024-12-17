@@ -13,112 +13,61 @@
 #include <sta/Units.hh>
 #include <unordered_map>
 
-std::unique_ptr<Context> Context::s_ctx(new Context);
+std::unique_ptr<Context> Context::s_ctx;
 
-static sta::Instance *link(const char *top_cell_name, bool, sta::Report *,
-                           sta::NetworkReader *) {
-  return Context::context()->linkNetwork(top_cell_name);
+Context *Context::ctx() {
+  if (s_ctx == nullptr) {
+    s_ctx = std::make_unique<Context>();
+  }
+  return s_ctx.get();
 }
 
+Context::Context() = default;
+
 bool Context::test() {
-  std::vector<std::string> net_names = {"clk",
-                                        "clknet_0_clk",
-                                        "clknet_2_0__leaf_clk",
-                                        "clknet_2_1__leaf_clk",
-                                        "clknet_2_2__leaf_clk",
-                                        "clknet_2_3__leaf_clk"};
-  for (const auto &name : net_names) {
-    GRNet *net = *std::find_if(
-        m_network->nets().begin(), m_network->nets().end(),
-        [&name](const GRNet *net) { return net->name() == name; });
-    std::cout << "pin of " << name << "\n";
-    for (const GRPin *pin : net->pins()) {
-      if (pin->instance() == nullptr)
-        std::cout << "( PIN " << pin->name() << " )\n";
-      else
-        std::cout << "( " << pin->instance()->name() << " " << pin->name()
-                  << " )\n";
-    }
-    std::cout << "\n";
-    // std::cout << "routing tree of " << name << "\n";
-    // GRTreeNode::preorder(
-    //     net->routingTree(), [](std::shared_ptr<GRTreeNode> node) {
-    //       for (auto child : node->children) {
-    //         std::printf("(%d %d %d) -> (%d %d %d)\n", node->x, node->y,
-    //                     node->layerIdx, child->x, child->y, child->layerIdx);
-    //       }
-    //     });
-    // std::cout << "\n";
-  }
+  auto sta = sta::Sta::sta();
+  LOG_INFO("cmdNetwork: %p", sta->cmdNetwork());
+  LOG_INFO("cmdNetwork->isLinked: %i", sta->cmdNetwork()->isLinked());
   return true;
 }
 
-bool Context::readLef(const std::string &lef_file) {
+bool Context::readLef(const char *lef_file) {
   if (m_lef_db == nullptr) {
     m_lef_db = std::make_unique<LefDatabase>();
   }
   return m_lef_db->read(lef_file);
 }
 
-bool Context::readDef(const std::string &def_file, bool use_routing) {
-  m_sta_network = sta::Sta::sta()->networkReader();
-  m_sta_report = sta::Sta::sta()->report();
-  sta::Sta::sta()->readNetlistBefore();
-  m_sta_network->setLinkFunc(link);
-
-  LOG_INFO("read def");
+bool Context::readDef(const char *def_file) {
   auto def_db = std::make_unique<DefDatabase>();
-  bool success = def_db->read(def_file, use_routing);
+  bool success = def_db->read(def_file, false);
   if (!success)
     return false;
 
-  LOG_INFO("init tech");
   m_tech = std::make_unique<GRTechnology>(m_lef_db.get(), def_db.get());
-  LOG_INFO("init network");
   m_network =
       std::make_unique<GRNetwork>(m_lef_db.get(), def_db.get(), m_tech.get());
-  LOG_INFO("init parasitics_builder");
   m_parasitics_builder =
       std::make_unique<MakeWireParasitics>(m_network.get(), m_tech.get());
-  m_sta = sta::Sta::sta();
 
-  m_sta_library = m_sta_network->findLibrary("lefdef");
-  if (m_sta_library == nullptr)
-    m_sta_library = m_sta_network->makeLibrary("lefdef", nullptr);
-
-  // topcell in def file
-  sta::Cell *sta_top_cell =
-      m_sta_network->findCell(m_sta_library, m_network->designName().c_str());
-  if (sta_top_cell) {
-    m_sta_network->deleteCell(sta_top_cell);
-  }
-  sta_top_cell = m_sta_network->makeCell(
-      m_sta_library, def_db->design_name.c_str(), false, def_file.c_str());
-  for (const DefIoPin &iopin : def_db->iopins) {
-    sta::Port *port = m_sta_network->makePort(sta_top_cell, iopin.name.c_str());
-    switch (iopin.direction) {
-    case PortDirection::Inout:
-      m_sta_network->setDirection(port, sta::PortDirection::bidirect());
-      break;
-    case PortDirection::Input:
-      m_sta_network->setDirection(port, sta::PortDirection::input());
-      break;
-    case PortDirection::Output:
-      m_sta_network->setDirection(port, sta::PortDirection::output());
-      break;
-    default:
-      LOG_WARN("Unknown direction of io PIN.%s", iopin.name.c_str());
-      break;
+  auto sta_network = sta::Sta::sta()->networkReader();
+  if (sta_network->pathDivider() == def_db->divisor) {
+    LOG_WARN(
+        "the hierarchy divisor of the DEF file coincide with that of OpenSTA.");
+    if (def_db->divisor == '/') {
+      LOG_WARN("Change OpenSTA's path divisor from `/` to `.`");
+      sta_network->setPathDivider('.');
+    } else {
+      LOG_WARN("Change OpenSTA's path divisor from `.` to `/`");
     }
   }
-
   return true;
 }
 
-bool Context::readGuide(const std::string &guide_file) {
+bool Context::readGuide(const char *guide_file) {
   std::ifstream fin(guide_file);
   if (!fin) {
-    LOG_ERROR("can not open file %s", guide_file.c_str());
+    LOG_ERROR("can not open file %s", guide_file);
     return false;
   }
 
@@ -209,34 +158,7 @@ bool Context::readGuide(const std::string &guide_file) {
   return true;
 }
 
-bool Context::runCugr2() {
-  cugr2::Parameters params;
-  params.threads = 1;
-  params.unit_length_wire_cost = 0.00131579;
-  params.unit_via_cost = 4.;
-  params.unit_overflow_costs =
-      std::vector<double>(static_cast<size_t>(m_tech->numLayers()), 5.);
-  params.min_routing_layer = m_tech->minRoutingLayer();
-  params.cost_logistic_slope = 1.;
-  params.maze_logistic_slope = .5;
-  params.via_multiplier = 2.;
-  params.target_detour_count = 20;
-  params.max_detour_ratio = 0.25;
-  cugr2::GlobalRouter globalRouter(m_network.get(), m_tech.get(), params);
-  globalRouter.route();
-  return true;
-}
-
-bool Context::estimateParasitcs() {
-  m_parasitics_builder->clearParasitics();
-  for (GRNet *net : m_network->nets()) {
-    m_parasitics_builder->estimateParasitcs(net);
-  }
-  sta::Sta::sta()->delaysInvalid();
-  return true;
-}
-
-bool Context::writeGuide(const std::string &guide_file) {
+bool Context::writeGuide(const char *guide_file) {
   std::ofstream fout(guide_file);
   for (GRNet *net : m_network->nets()) {
     fout << net->name() << std::endl;
@@ -272,10 +194,10 @@ bool Context::writeGuide(const std::string &guide_file) {
   return true;
 }
 
-bool Context::writeSlack(const std::string &slack_file) {
+bool Context::writeSlack(const char *slack_file) {
   std::ofstream fout(slack_file);
   if (!fout) {
-    LOG_ERROR("can not open file %s", slack_file.c_str());
+    LOG_ERROR("can not open file %s", slack_file);
     return false;
   }
   for (GRNet *net : m_network->nets()) {
@@ -285,55 +207,111 @@ bool Context::writeSlack(const std::string &slack_file) {
   return true;
 }
 
-sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
-  if (m_sta_library == nullptr) {
-    LOG_ERROR("libray has not been initialized");
-    return nullptr;
-  }
+static sta::Instance *link(const char *top_cell_name, bool, sta::Report *,
+                           sta::NetworkReader *) {
+  return Context::ctx()->linkNetwork(top_cell_name);
+}
+
+bool Context::linkDesign(const char *design_name) {
+  auto sta = sta::Sta::sta();
+  sta->readNetlistBefore();
+
+  // create top cell
+  sta::NetworkReader *sta_network = sta->networkReader();
+  sta::Library *sta_library =
+      sta_network->findLibrary(m_network->designName().c_str());
+  if (sta_library == nullptr)
+    sta_library =
+        sta_network->makeLibrary(m_network->designName().c_str(), nullptr);
+
+  // topcell in def file
   sta::Cell *sta_top_cell =
-      m_sta_network->findCell(m_sta_library, top_cell_name.c_str());
-  if (sta_top_cell == nullptr) {
-    LOG_ERROR("%s is not a def design.", top_cell_name.c_str());
+      sta_network->findCell(sta_library, m_network->designName().c_str());
+  if (sta_top_cell) {
+    sta_network->deleteCell(sta_top_cell);
+  }
+  sta_top_cell = sta_network->makeCell(
+      sta_library, m_network->designName().c_str(), false, nullptr);
+  for (const GRPin *pin : m_network->pins()) {
+    if (pin->instance() == nullptr) {
+      sta::Port *port =
+          sta_network->makePort(sta_top_cell, pin->name().c_str());
+      switch (pin->direction()) {
+      case PortDirection::Inout:
+        sta_network->setDirection(port, sta::PortDirection::bidirect());
+        break;
+      case PortDirection::Input:
+        sta_network->setDirection(port, sta::PortDirection::input());
+        break;
+      case PortDirection::Output:
+        sta_network->setDirection(port, sta::PortDirection::output());
+        break;
+      default:
+        sta_network->setDirection(port, sta::PortDirection::unknown());
+        LOG_WARN("Unknown direction of io PIN.%s", pin->name().c_str());
+        break;
+      }
+    }
+  }
+  // link network
+  auto sta_report = sta->report();
+  sta_network->setLinkFunc(link);
+  sta_network->linkNetwork(design_name, false, sta_report);
+  return true;
+}
+
+sta::Instance *Context::linkNetwork(const char *top_cell_name) {
+  sta::NetworkReader *sta_network = sta::Sta::sta()->networkReader();
+  sta::Library *sta_library =
+      sta_network->findLibrary(m_network->designName().c_str());
+  if (sta_library == nullptr) {
+    LOG_ERROR("No def file read before");
     return nullptr;
   }
 
+  sta::Cell *sta_top_cell = sta_network->findCell(sta_library, top_cell_name);
+  if (sta_top_cell == nullptr) {
+    LOG_ERROR("%s is not the def design_name.", top_cell_name);
+    return nullptr;
+  }
   sta::Instance *sta_top_inst =
-      m_sta_network->makeInstance(sta_top_cell, "", nullptr);
+      sta_network->makeInstance(sta_top_cell, "", nullptr);
 
   std::unordered_map<sta::Instance *, sta::LibertyCell *> sta_inst_cell_map;
   for (const GRNet *net : m_network->nets()) {
-    sta::Net *sta_net =
-        m_sta_network->makeNet(net->name().c_str(), sta_top_inst);
+    sta::Net *sta_net = sta_network->makeNet(net->name().c_str(), sta_top_inst);
     for (const GRPin *pin : net->pins()) {
       if (pin->instance() == nullptr) { // IO pin
         sta::Port *sta_port =
-            m_sta_network->findPort(sta_top_cell, pin->name().c_str());
+            sta_network->findPort(sta_top_cell, pin->name().c_str());
         if (sta_port == nullptr) {
           LOG_ERROR("io port name PIN.%s not found", pin->name().c_str());
-          m_sta_network->deleteInstance(sta_top_inst);
+          sta_network->deleteInstance(sta_top_inst);
           return nullptr;
         }
-        if (m_sta_network->findPin(sta_top_inst, sta_port) == nullptr) {
+        if (sta_network->findPin(sta_top_inst, sta_port) == nullptr) {
           sta::Pin *sta_pin =
-              m_sta_network->makePin(sta_top_inst, sta_port, nullptr);
-          m_sta_network->makeTerm(sta_pin, sta_net);
+              sta_network->makePin(sta_top_inst, sta_port, nullptr);
+          sta_network->makeTerm(sta_pin, sta_net);
         }
         // m_sta_network->connect(sta_top_inst, sta_port, sta_net);
       } else { // internal pin
         GRInstance *inst = pin->instance();
-        sta::Instance *sta_inst = m_sta_network->findInstanceRelative(
+        sta::Instance *sta_inst = sta_network->findInstanceRelative(
             sta_top_inst, inst->name().c_str());
         // if the instance not found, then create it
+        LOG_TRACE("Find %s, success = %d", inst->name().c_str(),
+                  sta_inst != nullptr);
         if (sta_inst == nullptr) {
           sta::LibertyCell *sta_liberty_cell =
-              m_sta_network->findLibertyCell(inst->libcellName().c_str());
+              sta_network->findLibertyCell(inst->libcellName().c_str());
           if (sta_liberty_cell == nullptr) {
             LOG_ERROR("%s is not a liberty libcell",
                       inst->libcellName().c_str());
-            m_sta_network->deleteInstance(sta_top_inst);
+            sta_network->deleteInstance(sta_top_inst);
             return nullptr;
           }
-          sta_inst = m_sta_network->makeInstance(
+          sta_inst = sta_network->makeInstance(
               sta_liberty_cell, inst->name().c_str(), sta_top_inst);
           sta_inst_cell_map.emplace(sta_inst, sta_liberty_cell);
         }
@@ -342,17 +320,43 @@ sta::Instance *Context::linkNetwork(const std::string &top_cell_name) {
         sta::LibertyCell *sta_liberty_cell = sta_inst_cell_map[sta_inst];
         sta::Cell *sta_cell = reinterpret_cast<sta::Cell *>(sta_liberty_cell);
         sta::Port *sta_port =
-            m_sta_network->findPort(sta_cell, pin->name().c_str());
+            sta_network->findPort(sta_cell, pin->name().c_str());
         if (sta_port == nullptr) {
-          LOG_ERROR("port name %s.%s not found", m_sta_network->name(sta_cell),
+          LOG_ERROR("port name %s.%s not found", sta_network->name(sta_cell),
                     pin->name().c_str());
-          m_sta_network->deleteInstance(sta_top_inst);
+          sta_network->deleteInstance(sta_top_inst);
           return nullptr;
         }
-        m_sta_network->makePin(sta_inst, sta_port, sta_net);
-        // m_sta_network->connect(sta_inst, sta_port, sta_net);
+        sta_network->makePin(sta_inst, sta_port, sta_net);
       }
     }
   }
   return sta_top_inst;
+}
+
+bool Context::runCugr2() {
+  cugr2::Parameters params;
+  params.threads = 1;
+  params.unit_length_wire_cost = 0.00131579;
+  params.unit_via_cost = 4.;
+  params.unit_overflow_costs =
+      std::vector<double>(static_cast<size_t>(m_tech->numLayers()), 5.);
+  params.min_routing_layer = m_tech->minRoutingLayer();
+  params.cost_logistic_slope = 1.;
+  params.maze_logistic_slope = .5;
+  params.via_multiplier = 2.;
+  params.target_detour_count = 20;
+  params.max_detour_ratio = 0.25;
+  cugr2::GlobalRouter globalRouter(m_network.get(), m_tech.get(), params);
+  globalRouter.route();
+  return true;
+}
+
+bool Context::estimateParasitcs() {
+  m_parasitics_builder->clearParasitics();
+  for (GRNet *net : m_network->nets()) {
+    m_parasitics_builder->estimateParasitcs(net);
+  }
+  // sta::Sta::sta()->delaysInvalid();
+  return true;
 }

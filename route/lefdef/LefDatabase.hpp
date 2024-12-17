@@ -50,7 +50,7 @@ struct LefDatabase {
   std::vector<LefVia> vias;
 
   bool clear();
-  bool read(const std::string &lef_file);
+  bool read(const char *lef_file);
 };
 
 #endif

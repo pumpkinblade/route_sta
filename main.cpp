@@ -26,6 +26,7 @@
 #endif
 
 #include "Sta.hh"
+#include "context/Context.hpp"
 #include "route/tcl/RouteTcl.hpp"
 
 namespace sta {

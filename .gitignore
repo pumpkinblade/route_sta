@@ -1,6 +1,7 @@
 build/
 .cache/
 .vscode/
-test/ispd24/
 test/results/*
 !test/results/.gitkeep
+test/ISPD25_benchmarks/*
+!test/ISPD25_benchmarks/test_ispd25.tcl

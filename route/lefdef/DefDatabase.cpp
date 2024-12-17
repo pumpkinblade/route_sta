@@ -1,8 +1,14 @@
 #include "DefDatabase.hpp"
-#include "../util/log.hpp"
 #include <cstring>
 #include <defrReader.hpp>
 #include <sta/Report.hh>
+
+static int defDivisorCbk(defrCallbackType_e, const char *divisor,
+                         defiUserData data) {
+  DefDatabase *db = reinterpret_cast<DefDatabase *>(data);
+  db->divisor = divisor[0];
+  return 0;
+}
 
 static int defDbuCbk(defrCallbackType_e, double dbu, defiUserData data) {
   DefDatabase *db = reinterpret_cast<DefDatabase *>(data);
@@ -175,6 +181,8 @@ static int defGridCbk(defrCallbackType_e, defiGcellGrid *grid,
   return 0;
 }
 
+DefDatabase::DefDatabase() { clear(); }
+
 bool DefDatabase::clear() {
   design_name = "";
   iopins.clear();
@@ -185,16 +193,18 @@ bool DefDatabase::clear() {
   route_per_net.clear();
   tracks.clear();
   gcell_grids.clear();
+  divisor = '/';
   return true;
 }
 
-bool DefDatabase::read(const std::string &def_file, bool use_routing) {
+bool DefDatabase::read(const char *def_file, bool use_routing) {
   int res = 0;
   defrInit();
   defrSetUserData(this);
   if (use_routing) {
     defrSetAddPathToNet();
   }
+  defrSetDividerCbk(defDivisorCbk);
   defrSetUnitsCbk(defDbuCbk);
   defrSetDieAreaCbk(defDieAreaCbk);
   defrSetDesignCbk(defDesignCbk);
@@ -203,11 +213,11 @@ bool DefDatabase::read(const std::string &def_file, bool use_routing) {
   defrSetNetCbk(defNetCbk);
   defrSetTrackCbk(defTrackCbk);
   defrSetGcellGridCbk(defGridCbk);
-  FILE *def_stream = std::fopen(def_file.c_str(), "r");
+  FILE *def_stream = std::fopen(def_file, "r");
   if (def_stream == nullptr) {
     return false;
   }
-  res = defrRead(def_stream, def_file.c_str(), this, 1);
+  res = defrRead(def_stream, def_file, this, 1);
   std::fclose(def_stream);
   if (res != 0) {
     return false;

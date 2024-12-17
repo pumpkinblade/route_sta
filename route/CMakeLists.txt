@@ -71,9 +71,9 @@ add_custom_command(
   TARGET route POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy 
     ${ROUTE_HOME}/stt/POST9.dat 
-    $<TARGET_FILE_DIR:route>/POST9.dat
+    ${CMAKE_BINARY_DIR}/POST9.dat
   COMMAND ${CMAKE_COMMAND} -E copy 
     ${ROUTE_HOME}/stt/POWV9.dat
-    $<TARGET_FILE_DIR:route>/POWV9.dat
+    ${CMAKE_BINARY_DIR}/POWV9.dat
 )
 

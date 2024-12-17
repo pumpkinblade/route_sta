@@ -56,6 +56,9 @@ struct DefDatabase {
   std::vector<DefCell> cells;
   std::vector<DefNet> nets;
 
+  // hierachy divisor i.e. / or .
+  char divisor;
+
   // dbu
   int dbu;
 
@@ -69,7 +72,9 @@ struct DefDatabase {
   std::vector<DefTrack> tracks;
   std::vector<DefGcellGrid> gcell_grids;
 
+  DefDatabase();
   bool clear();
-  bool read(const std::string &def_file, bool use_routing);
+  // bool read(const char *def_file, bool use_routing);
+  bool read(const char *def_file, bool use_routing);
 };
 #endif

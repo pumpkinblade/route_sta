@@ -1,6 +1,7 @@
 #ifndef __GR_PIN_HPP__
 #define __GR_PIN_HPP__
 
+#include "../util/common.hpp"
 #include "GRTree.hpp"
 #include <string>
 
@@ -14,10 +15,12 @@ public:
   // network info set
   void setInstance(GRInstance *inst) { m_instance = inst; }
   void setNet(GRNet *n) { m_net = n; }
+  void setDirection(PortDirection dir) { m_direction = dir; };
   // network info get
   std::string name() const { return m_name; }
   GRInstance *instance() const { return m_instance; }
   GRNet *net() const { return m_net; }
+  PortDirection direction() const { return m_direction; }
 
   // geo info set
   void setAccessIndex(size_t idx) { m_access_idx = idx; }
@@ -40,6 +43,7 @@ private:
   std::string m_name;
   GRInstance *m_instance;
   GRNet *m_net;
+  PortDirection m_direction;
 
   // geo info
   size_t m_access_idx;
