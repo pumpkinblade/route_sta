@@ -300,8 +300,6 @@ sta::Instance *Context::linkNetwork(const char *top_cell_name) {
         sta::Instance *sta_inst = sta_network->findInstanceRelative(
             sta_top_inst, inst->name().c_str());
         // if the instance not found, then create it
-        LOG_TRACE("Find %s, success = %d", inst->name().c_str(),
-                  sta_inst != nullptr);
         if (sta_inst == nullptr) {
           sta::LibertyCell *sta_liberty_cell =
               sta_network->findLibertyCell(inst->libcellName().c_str());
