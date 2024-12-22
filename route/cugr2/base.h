@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../object/Helper.hpp"
 #include <cmath>
 #include <vector>
 
@@ -7,7 +8,7 @@ namespace cugr2 {
 
 using CapacityT = double;
 using CostT = double;
-using DBU = int;
+using DBU = sca::DBU;
 
 struct MetalLayer {
   static constexpr unsigned H = 0;

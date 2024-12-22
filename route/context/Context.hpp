@@ -1,8 +1,7 @@
 #pragma once
 
-
-#include "../object/GRNetwork.hpp"
-#include "../object/GRTechnology.hpp"
+#include "../object/Design.hpp"
+#include "../object/Technology.hpp"
 #include "../timing/MakeWireParasitics.hpp"
 #include <memory>
 
@@ -13,38 +12,38 @@ class Instance;
 class Library;
 } // namespace sta
 
+namespace sca {
+
 class Context {
 public:
   static Context *ctx();
 
   Context();
 
-  bool test();
+  int readLef(const char *lef_file);
+  int readDef(const char *def_file);
+  int linkDesign(const char *design_name);
+  static sta::Instance *linkFunc(const char *top_cell_name, bool, sta::Report *,
+                                 sta::NetworkReader *);
 
-  bool readLef(const char *lef_file);
-  bool readDef(const char *def_file);
-  bool readGuide(const char *guide_file);
-  bool writeGuide(const char *guide_file);
-  bool writeSlack(const char *slack_file);
+  // int readGuide(const char *guide_file);
+  // int writeGuide(const char *guide_file);
+  // int writeSlack(const char *slack_file);
 
-  bool linkDesign(const char *design_name);
-  sta::Instance *linkNetwork(const char *top_cell_name);
+  int runCugr2();
+  int estimateParasitcs();
 
-  bool runCugr2();
-  bool estimateParasitcs();
-
-  GRNetwork *network() { return m_network.get(); }
-  GRTechnology *technology() { return m_tech.get(); }
+  Technology *technology() const { return m_tech.get(); }
+  Design *design() const { return m_design.get(); }
+  MakeWireParasitics *parasiticsBuilder() const {
+    return m_parasitics_builder.get();
+  }
 
 private:
   static std::unique_ptr<Context> s_ctx;
 
-  std::unique_ptr<GRNetwork> m_network;
-  std::unique_ptr<GRTechnology> m_tech;
+  std::unique_ptr<Technology> m_tech;
+  std::unique_ptr<Design> m_design;
   std::unique_ptr<MakeWireParasitics> m_parasitics_builder;
-
-  std::unique_ptr<LefDatabase> m_lef_db;
-  // std::unique_ptr<DefDatabase> m_def_db;
 };
-
-
+} // namespace sca

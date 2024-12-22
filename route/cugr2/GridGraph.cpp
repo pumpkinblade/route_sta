@@ -10,19 +10,31 @@ using std::max;
 using std::min;
 using std::vector;
 
-GridGraph::GridGraph(const GRTechnology *tech, const Parameters &params)
-    : parameters(params) {
+GridGraph::GridGraph(sca::Design *design, const Parameters &params)
+    : m_design(design), parameters(params) {
+  sca::Grid *grid = m_design->grid();
+  sca::Technology *tech = m_design->technology();
   nLayers = tech->numLayers();
-  xSize = tech->numGcellX();
-  ySize = tech->numGcellY();
+  xSize = grid->sizeX();
+  ySize = grid->sizeY();
 
   layerDirections.resize(nLayers);
   layerMinLengths.resize(nLayers);
+  DBU min_length_x = std::numeric_limits<DBU>::max();
+  DBU min_length_y = std::numeric_limits<DBU>::max();
+  for (int x = 0; x < xSize - 1; x++)
+    min_length_x = std::min(min_length_x, grid->edgeLengthX(x));
+  for (int y = 0; y < ySize - 1; y++)
+    min_length_y = std::min(min_length_y, grid->edgeLengthY(y));
   for (int l = 0; l < nLayers; l++) {
-    layerMinLengths[l] = tech->layerMinLengthDbu(l);
-    layerDirections[l] = tech->layerDirection(l) == LayerDirection::Horizontal
-                             ? MetalLayer::H
-                             : MetalLayer::V;
+    layerDirections[l] =
+        tech->layer(l)->direction() == sca::LayerDirection::Horizontal
+            ? MetalLayer::H
+            : MetalLayer::V;
+    layerMinLengths[l] =
+        tech->layer(l)->direction() == sca::LayerDirection::Horizontal
+            ? min_length_x
+            : min_length_y;
   }
 
   unit_length_wire_cost = params.unit_length_wire_cost;
@@ -35,10 +47,10 @@ GridGraph::GridGraph(const GRTechnology *tech, const Parameters &params)
   edgeLengths[MetalLayer::H].resize(xSize - 1);
   edgeLengths[MetalLayer::V].resize(ySize - 1);
   for (int x = 0; x < xSize - 1; x++) {
-    edgeLengths[MetalLayer::H][x] = tech->edgeLengthDbuX(x);
+    edgeLengths[MetalLayer::H][x] = grid->edgeLengthX(x);
   }
   for (int y = 0; y < xSize - 1; y++) {
-    edgeLengths[MetalLayer::H][y] = tech->edgeLengthDbuX(y);
+    edgeLengths[MetalLayer::H][y] = grid->edgeLengthY(y);
   }
 
   graphEdges.assign(nLayers,
@@ -47,13 +59,12 @@ GridGraph::GridGraph(const GRTechnology *tech, const Parameters &params)
     for (int x = 0; x < xSize; x++)
       for (int y = 0; y < ySize; y++)
         graphEdges[layerIdx][x][y].capacity =
-            tech->edgeCapacity(layerIdx, x, y);
+            grid->edgeCapacity(layerIdx, x, y);
   }
   flag.assign(nLayers, vector<vector<bool>>(xSize, vector<bool>(ySize)));
 }
 
-CostT GridGraph::getWireCost(const int layerIndex,
-                             const utils::PointT<int> lower,
+CostT GridGraph::getWireCost(const int layerIndex, const sca::PointT<int> lower,
                              const CapacityT demand) const {
   // ----- legacy cost -----
   // unsigned direction = layerDirections[layerIndex];
@@ -77,8 +88,8 @@ CostT GridGraph::getWireCost(const int layerIndex,
   return cost;
 }
 
-CostT GridGraph::getWireCost(const int layerIndex, const utils::PointT<int> u,
-                             const utils::PointT<int> v) const {
+CostT GridGraph::getWireCost(const int layerIndex, const sca::PointT<int> u,
+                             const sca::PointT<int> v) const {
   unsigned direction = layerDirections[layerIndex];
   assert(u[1 - direction] == v[1 - direction]);
   CostT cost = 0;
@@ -95,7 +106,7 @@ CostT GridGraph::getWireCost(const int layerIndex, const utils::PointT<int> u,
 }
 
 CostT GridGraph::getViaCost(const int layerIndex,
-                            const utils::PointT<int> loc) const {
+                            const sca::PointT<int> loc) const {
   assert(layerIndex + 1 < nLayers);
 
   // ----- legacy cost -----
@@ -104,7 +115,7 @@ CostT GridGraph::getViaCost(const int layerIndex,
   // for (int l = layerIndex; l <= layerIndex + 1; l++)
   // {
   //     unsigned direction = layerDirections[l];
-  //     utils::PointT<int> lowerLoc = loc;
+  //     sca::PointT<int> lowerLoc = loc;
   //     lowerLoc[direction] -= 1;
   //     DBU lowerEdgeLength = loc[direction] > 0 ? getEdgeLength(direction,
   //     lowerLoc[direction]) : 0; DBU higherEdgeLength = loc[direction] <
@@ -122,7 +133,7 @@ CostT GridGraph::getViaCost(const int layerIndex,
 }
 
 CostT GridGraph::getNonStackViaCost(const int layerIndex,
-                                    const utils::PointT<int> loc) const {
+                                    const sca::PointT<int> loc) const {
   // ----- legacy cost -----
   // return 0;
 
@@ -158,22 +169,29 @@ CostT GridGraph::getNonStackViaCost(const int layerIndex,
 }
 
 void GridGraph::selectAccessPoints(
-    GRNet *net,
+    sca::Net *net,
     std::unordered_map<uint64_t,
-                       std::pair<utils::PointT<int>, utils::IntervalT<int>>>
+                       std::pair<sca::PointT<int>, sca::IntervalT<int>>>
         &selectedAccessPoints) const {
   selectedAccessPoints.clear();
   // cell hash (2d) -> access point, fixed layer interval
-  selectedAccessPoints.reserve(net->pins().size());
-  utils::BoxT<int> bbox;
-  for (const GRPin *pin : net->pins()) {
-    for (const GRPoint &pt : pin->accessPoints()) {
+  selectedAccessPoints.reserve(net->numPins());
+  sca::BoxT<int> bbox;
+
+  std::vector<std::vector<sca::PointOnLayerT<int>>> pts_per_pin(net->numPins());
+  for (int i = 0; i < net->numPins(); i++) {
+    sca::Pin *pin = net->pin(i);
+    m_design->grid()->computeAccessPoints(pin, pts_per_pin[i]);
+  }
+  for (const auto &pts : pts_per_pin) {
+    for (const sca::PointOnLayerT<int> &pt : pts) {
       bbox.Update(pt);
     }
   }
-  utils::PointT<int> netCenter(bbox.cx(), bbox.cy());
-  for (GRPin *pin : net->pins()) {
-    const auto &accessPoints = pin->accessPoints();
+  sca::PointT<int> netCenter(bbox.cx(), bbox.cy());
+  for (int i = 0; i < net->numPins(); i++) {
+    sca::Pin *pin = net->pin(i);
+    const auto &accessPoints = pts_per_pin[i];
     std::pair<int, int> bestAccessDist = {0, std::numeric_limits<int>::max()};
     int bestIndex = -1;
     for (int index = 0; index < accessPoints.size(); index++) {
@@ -203,15 +221,14 @@ void GridGraph::selectAccessPoints(
     if (bestAccessDist.first == 0) {
       LOG_WARN("the pin is hard to access.");
     }
-    pin->setAccessIndex(bestIndex);
-    const utils::PointT<int> selectedPoint = accessPoints[bestIndex];
+    pin->setPosition(accessPoints[bestIndex]);
+    const sca::PointT<int> selectedPoint = accessPoints[bestIndex];
     const uint64_t hash = hashCell(selectedPoint.x, selectedPoint.y);
     if (selectedAccessPoints.find(hash) == selectedAccessPoints.end()) {
       selectedAccessPoints.emplace(
-          hash, std::make_pair(selectedPoint, utils::IntervalT<int>()));
+          hash, std::make_pair(selectedPoint, sca::IntervalT<int>()));
     }
-    utils::IntervalT<int> &fixedLayerInterval =
-        selectedAccessPoints[hash].second;
+    sca::IntervalT<int> &fixedLayerInterval = selectedAccessPoints[hash].second;
     for (const auto &point : accessPoints) {
       if (point.x == selectedPoint.x && point.y == selectedPoint.y) {
         fixedLayerInterval.Update(point.layerIdx);
@@ -221,12 +238,12 @@ void GridGraph::selectAccessPoints(
   // // Extend the fixed layers to 2 layers higher to facilitate track switching
   // for (auto &accessPoint : selectedAccessPoints)
   // {
-  //     utils::IntervalT<int> &fixedLayers = accessPoint.second.second;
+  //     sca::IntervalT<int> &fixedLayers = accessPoint.second.second;
   //     fixedLayers.high = min(fixedLayers.high + 2, (int)getNumLayers() - 1);
   // }
 }
 
-void GridGraph::commitWire(const int layerIndex, const utils::PointT<int> lower,
+void GridGraph::commitWire(const int layerIndex, const sca::PointT<int> lower,
                            const bool reverse) {
   graphEdges[layerIndex][lower.x][lower.y].demand += (reverse ? -1.f : 1.f);
   unsigned direction = getLayerDirection(layerIndex);
@@ -242,14 +259,14 @@ void GridGraph::commitWire(const int layerIndex, const utils::PointT<int> lower,
   totalLength += (reverse ? -edgeLength : edgeLength);
 }
 
-void GridGraph::commitVia(const int layerIndex, const utils::PointT<int> loc,
+void GridGraph::commitVia(const int layerIndex, const sca::PointT<int> loc,
                           const bool reverse) {
   assert(layerIndex + 1 < nLayers);
   totalNumVias += (reverse ? -1 : 1);
 }
 
 void GridGraph::commitNonStackVia(const int layerIndex,
-                                  const utils::PointT<int> loc,
+                                  const sca::PointT<int> loc,
                                   const bool reverse) {
   auto isHorizontal = getLayerDirection(layerIndex) == MetalLayer::H;
   auto [x, y] = loc;
@@ -302,10 +319,10 @@ void GridGraph::commitNonStackVia(const int layerIndex,
 //         } });
 // }
 
-void GridGraph::commitTree(const std::shared_ptr<GRTreeNode> &tree,
+void GridGraph::commitTree(const std::shared_ptr<sca::GRTreeNode> &tree,
                            const bool reverse) {
   // LOG_TRACE("reset flag");
-  GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
+  sca::GRTreeNode::preorder(tree, [&](std::shared_ptr<sca::GRTreeNode> node) {
     for (const auto &child : node->children) {
       if (node->layerIdx == child->layerIdx) { // wires
         if (getLayerDirection(node->layerIdx) == MetalLayer::H) {
@@ -326,7 +343,7 @@ void GridGraph::commitTree(const std::shared_ptr<GRTreeNode> &tree,
     }
   });
   // LOG_TRACE("commit wire");
-  GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
+  sca::GRTreeNode::preorder(tree, [&](std::shared_ptr<sca::GRTreeNode> node) {
     for (const auto &child : node->children) {
       if (node->layerIdx == child->layerIdx) { // wires
         if (getLayerDirection(node->layerIdx) == MetalLayer::H) {
@@ -348,7 +365,7 @@ void GridGraph::commitTree(const std::shared_ptr<GRTreeNode> &tree,
     }
   });
   // LOG_TRACE("commit non-stacked via");
-  GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
+  sca::GRTreeNode::preorder(tree, [&](std::shared_ptr<sca::GRTreeNode> node) {
     for (const auto &child : node->children) {
       if (node->layerIdx != child->layerIdx) {
         for (int z = min(node->layerIdx, child->layerIdx),
@@ -365,8 +382,8 @@ void GridGraph::commitTree(const std::shared_ptr<GRTreeNode> &tree,
   });
 }
 
-int GridGraph::checkOverflow(const int layerIndex, const utils::PointT<int> u,
-                             const utils::PointT<int> v) const {
+int GridGraph::checkOverflow(const int layerIndex, const sca::PointT<int> u,
+                             const sca::PointT<int> v) const {
   int num = 0;
   unsigned direction = layerDirections[layerIndex];
   if (direction == MetalLayer::H) {
@@ -387,16 +404,17 @@ int GridGraph::checkOverflow(const int layerIndex, const utils::PointT<int> u,
   return num;
 }
 
-int GridGraph::checkOverflow(const std::shared_ptr<GRTreeNode> &tree) const {
+int GridGraph::checkOverflow(
+    const std::shared_ptr<sca::GRTreeNode> &tree) const {
   if (!tree)
     return 0;
   int num = 0;
-  GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
+  sca::GRTreeNode::preorder(tree, [&](std::shared_ptr<sca::GRTreeNode> node) {
     for (auto &child : node->children) {
       // Only check wires
       if (node->layerIdx == child->layerIdx) {
-        num += checkOverflow(node->layerIdx, (utils::PointT<int>)*node,
-                             (utils::PointT<int>)*child);
+        num += checkOverflow(node->layerIdx, (sca::PointT<int>)*node,
+                             (sca::PointT<int>)*child);
       }
     }
   });
@@ -498,7 +516,8 @@ void GridGraph::extractWireCostView(GridGraphView<CostT> &view) const {
 }
 
 void GridGraph::updateWireCostView(
-    GridGraphView<CostT> &view, std::shared_ptr<GRTreeNode> routingTree) const {
+    GridGraphView<CostT> &view,
+    std::shared_ptr<sca::GRTreeNode> routingTree) const {
   vector<vector<int>> sameDirectionLayers(2);
   vector<CostT> unitOverflowCost(2, std::numeric_limits<CostT>::max());
   for (int layerIndex = parameters.min_routing_layer;
@@ -534,35 +553,36 @@ void GridGraph::updateWireCostView(
                                              exp(slope * (demand - capacity)) *
                                              (exp(slope) - 1);
   };
-  GRTreeNode::preorder(routingTree, [&](std::shared_ptr<GRTreeNode> node) {
-    for (const auto &child : node->children) {
-      if (node->layerIdx == child->layerIdx) {
-        unsigned direction = getLayerDirection(node->layerIdx);
-        if (direction == MetalLayer::H) {
-          assert(node->y == child->y);
-          int l = min(node->x, child->x), h = max(node->x, child->x);
-          for (int x = l; x < h; x++) {
-            update(direction, x, node->y);
-          }
-        } else {
-          assert(node->x == child->x);
-          int l = min(node->y, child->y), h = max(node->y, child->y);
-          for (int y = l; y < h; y++) {
-            update(direction, node->x, y);
+  sca::GRTreeNode::preorder(
+      routingTree, [&](std::shared_ptr<sca::GRTreeNode> node) {
+        for (const auto &child : node->children) {
+          if (node->layerIdx == child->layerIdx) {
+            unsigned direction = getLayerDirection(node->layerIdx);
+            if (direction == MetalLayer::H) {
+              assert(node->y == child->y);
+              int l = min(node->x, child->x), h = max(node->x, child->x);
+              for (int x = l; x < h; x++) {
+                update(direction, x, node->y);
+              }
+            } else {
+              assert(node->x == child->x);
+              int l = min(node->y, child->y), h = max(node->y, child->y);
+              for (int y = l; y < h; y++) {
+                update(direction, node->x, y);
+              }
+            }
+          } else {
+            int maxLayerIndex = max(node->layerIdx, child->layerIdx);
+            for (int layerIdx = min(node->layerIdx, child->layerIdx);
+                 layerIdx < maxLayerIndex; layerIdx++) {
+              unsigned direction = getLayerDirection(layerIdx);
+              update(direction, node->x, node->y);
+              if ((*node)[direction] > 0)
+                update(direction, node->x - 1 + direction, node->y - direction);
+            }
           }
         }
-      } else {
-        int maxLayerIndex = max(node->layerIdx, child->layerIdx);
-        for (int layerIdx = min(node->layerIdx, child->layerIdx);
-             layerIdx < maxLayerIndex; layerIdx++) {
-          unsigned direction = getLayerDirection(layerIdx);
-          update(direction, node->x, node->y);
-          if ((*node)[direction] > 0)
-            update(direction, node->x - 1 + direction, node->y - direction);
-        }
-      }
-    }
-  });
+      });
 }
 
 } // namespace cugr2

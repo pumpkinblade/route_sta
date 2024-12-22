@@ -6,16 +6,14 @@ namespace cugr2 {
 
 class GlobalRouter {
 public:
-  GlobalRouter(GRNetwork *network, GRTechnology *tech,
-               const Parameters &params);
+  GlobalRouter(sca::Design *design, const Parameters &params);
   GlobalRouter(const GlobalRouter &) = delete;
   GlobalRouter &operator=(const GlobalRouter &) = delete;
 
   void route();
 
 private:
-  GRNetwork *m_network;
-  GRTechnology *m_tech;
+  sca::Design *m_design;
   Parameters parameters;
   GridGraph gridGraph;
 

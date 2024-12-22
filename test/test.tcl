@@ -49,27 +49,29 @@ proc report_timing {} {
 # sca::estimate_parasitics
 # setup_sta_env
 # report_timing
+# ### wns -0.06 tns -0.37 power 2.33e-3
 # exit
 
-# ### def+cugr2 -> timing report
-# read_liberty "./Nangate45/Nangate45_typ.lib"
-# sca::read_lef "./Nangate45/Nangate45.lef"
-# sca::read_def "./gcd_nangate45.def"
-# sca::link_design gcd
-# sca::run_cugr2
-# sca::estimate_parasitics
-# setup_sta_env
-# report_timing
-# exit
-
-# set_hierarchy_separator .
+### def+cugr2 -> timing report
 read_liberty "./Nangate45/Nangate45_typ.lib"
-# sca::read_lef "./Nangate45/Nangate45.lef"
-# sca::read_def "./example1.def"
-# sca::link_design top
-read_verilog "./example1.v"
-link_design top
-create_clock -name clk -period 10 {clk1 clk2 clk3}
-set_input_delay -clock clk 0 {in1 in2}
-report_checks
-# report_arrival sca/r1/D
+sca::read_lef "./Nangate45/Nangate45.lef"
+sca::read_def "./gcd_nangate45_new.def"
+sca::link_design gcd
+sca::run_cugr2
+sca::estimate_parasitics
+setup_sta_env
+report_timing
+### wns -0.06 tns -0.38 power 2.33e-3
+exit
+
+# # set_hierarchy_separator .
+# read_liberty "./Nangate45/Nangate45_typ.lib"
+# # sca::read_lef "./Nangate45/Nangate45.lef"
+# # sca::read_def "./example1.def"
+# # sca::link_design top
+# read_verilog "./example1.v"
+# link_design top
+# create_clock -name clk -period 10 {clk1 clk2 clk3}
+# set_input_delay -clock clk 0 {in1 in2}
+# report_checks
+# # report_arrival sca/r1/D

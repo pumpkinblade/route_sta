@@ -7,16 +7,44 @@ set(ROUTE_HOME ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(LEMON CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED)
 
+# add_library(route
+#   ${ROUTE_HOME}/context/Context.cpp
+#   ${ROUTE_HOME}/object/GRNetwork.cpp
+#   ${ROUTE_HOME}/object/GRTechnology.cpp
+#   ${ROUTE_HOME}/object/GRTree.cpp
+#   ${ROUTE_HOME}/object/GRPin.cpp
+#   ${ROUTE_HOME}/lefdef/LefDatabase.cpp
+#   ${ROUTE_HOME}/lefdef/DefDatabase.cpp
+#   ${ROUTE_HOME}/timing/MakeWireParasitics.cpp
+#   ${ROUTE_HOME}/tcl/RouteTcl.cpp
+#   ${ROUTE_HOME}/util/log.cpp
+
+#   ${ROUTE_HOME}/stt/pd.cpp
+#   ${ROUTE_HOME}/stt/flute.cpp
+
+#   ${ROUTE_HOME}/cugr2/GlobalRouter.cpp
+#   ${ROUTE_HOME}/cugr2/GridGraph.cpp
+#   ${ROUTE_HOME}/cugr2/MazeRoute.cpp
+#   ${ROUTE_HOME}/cugr2/PatternRoute.cpp
+# )
+
 add_library(route
   ${ROUTE_HOME}/context/Context.cpp
-  ${ROUTE_HOME}/object/GRNetwork.cpp
-  ${ROUTE_HOME}/object/GRTechnology.cpp
-  ${ROUTE_HOME}/object/GRTree.cpp
-  ${ROUTE_HOME}/object/GRPin.cpp
-  ${ROUTE_HOME}/lefdef/LefDatabase.cpp
-  ${ROUTE_HOME}/lefdef/DefDatabase.cpp
+
+  ${ROUTE_HOME}/object/Design.cpp
+  ${ROUTE_HOME}/object/Grid.cpp
+  ${ROUTE_HOME}/object/Technology.cpp
+  ${ROUTE_HOME}/object/Helper.cpp
+  ${ROUTE_HOME}/object/Route.cpp
+  ${ROUTE_HOME}/object/Technology.cpp
+
   ${ROUTE_HOME}/timing/MakeWireParasitics.cpp
+
+  ${ROUTE_HOME}/parser/lefParser.cpp
+  ${ROUTE_HOME}/parser/defParser.cpp
+
   ${ROUTE_HOME}/tcl/RouteTcl.cpp
+
   ${ROUTE_HOME}/util/log.cpp
 
   ${ROUTE_HOME}/stt/pd.cpp

@@ -3,5 +3,5 @@ build/
 .vscode/
 test/results/*
 !test/results/.gitkeep
-test/ISPD25_benchmarks/*
-!test/ISPD25_benchmarks/test_ispd25.tcl
+ISPD25_benchmarks/*
+!ISPD25_benchmarks/test_ispd25.tcl

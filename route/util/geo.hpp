@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -8,7 +7,7 @@
 #include <limits>
 #include <vector>
 
-namespace utils {
+namespace sca {
 
 // Point template
 template <typename T> class PointT {
@@ -429,15 +428,13 @@ public:
   bool IsRectilinear() const { return BoxT<T>::x() == 0 || BoxT<T>::y() == 0; }
 };
 
-template <typename T> class BoxOnLayerT : public BoxT<T> {
-public:
-  int layerIdx;
-  BoxOnLayerT() = default;
-  template <class... Args>
-  BoxOnLayerT(int l, Args &&...args)
-      : BoxT<T>(std::forward<Args>(args)...), layerIdx(l) {}
-};
+// template <typename T> class BoxOnLayerT : public BoxT<T> {
+// public:
+//   int layerIdx;
+//   BoxOnLayerT() = default;
+//   template <class... Args>
+//   BoxOnLayerT(int l, Args &&...args)
+//       : BoxT<T>(std::forward<Args>(args)...), layerIdx(l) {}
+// };
 
-} // namespace utils
-
-
+} // namespace sca

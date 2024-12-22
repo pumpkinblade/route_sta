@@ -45,8 +45,8 @@ using lemon::ListGraph;
 using std::vector;
 using stt::Tree;
 
-using Point = utils::PointT<int>;
-using Rect = utils::BoxT<int>;
+using Point = sca::PointT<int>;
+using Rect = sca::BoxT<int>;
 
 /////////// Nearest Neighbors
 
@@ -185,7 +185,7 @@ static void buildSpanningTree(const ListGraph::NodeMap<Point> &node_point,
       }
 
       const int edge_length =
-          utils::Dist(node_point[neighbor_node], node_point[edge.node]);
+          sca::Dist(node_point[neighbor_node], node_point[edge.node]);
       const int neighbor_path_length = edge_length + edge.path_length;
       const float neighbor_weight = edge_length + alpha * edge.path_length;
 
@@ -259,7 +259,7 @@ best_steiner_for_node(const ListGraph &graph, const ListGraph::Node &node,
         pt_steiner.y = std::max(pt1.y, pt2.y);
       }
 
-      const int gain = utils::Dist(pt_steiner, pt_node);
+      const int gain = sca::Dist(pt_steiner, pt_node);
       if (gain > best.gain) {
         best = {gain, node, edge1, edge2, pt_steiner};
       }

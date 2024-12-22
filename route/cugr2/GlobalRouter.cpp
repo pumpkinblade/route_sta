@@ -12,10 +12,8 @@ using std::max;
 using std::min;
 using std::vector;
 
-GlobalRouter::GlobalRouter(GRNetwork *network, GRTechnology *tech,
-                           const Parameters &params)
-    : m_network(network), m_tech(tech), parameters(params),
-      gridGraph(tech, params) {
+GlobalRouter::GlobalRouter(sca::Design *design, const Parameters &params)
+    : m_design(design), parameters(params), gridGraph(design, params) {
   numofThreads = params.threads;
   unit_length_wire_cost = params.unit_length_wire_cost;
   unit_via_cost = params.unit_via_cost;
@@ -30,9 +28,9 @@ void GlobalRouter::route() {
   // std::ofstream  afile;
   // afile.open("time", std::ios::app);
 
-  vector<int> netIndices(m_network->nets().size());
-  vector<int> netOverflows(m_network->nets().size(), 0);
-  for (int i = 0; i < m_network->nets().size(); i++) {
+  vector<int> netIndices(m_design->numNets());
+  vector<int> netOverflows(m_design->numNets(), 0);
+  for (int i = 0; i < m_design->numNets(); i++) {
     netIndices[i] = i;
   }
 
@@ -41,24 +39,23 @@ void GlobalRouter::route() {
   n1 = netIndices.size();
   gridGraph.clearDemand();
   for (const int netIndex : netIndices) {
-    PatternRoute patternRoute(m_network->nets()[netIndex], gridGraph,
-                              parameters);
+    PatternRoute patternRoute(m_design->net(netIndex), gridGraph, parameters);
     patternRoute.constructSteinerTree();
     patternRoute.constructRoutingDAG();
     patternRoute.run();
-    gridGraph.commitTree(m_network->nets()[netIndex]->routingTree());
+    gridGraph.commitTree(m_design->net(netIndex)->routingTree());
   }
   netIndices.clear();
-  for (int i = 0; i < m_network->nets().size(); i++) {
-    GRNet *net = m_network->nets()[i];
+  for (int i = 0; i < m_design->numNets(); i++) {
+    sca::Net *net = m_design->net(i);
     int netOverflow = gridGraph.checkOverflow(net->routingTree());
     if (netOverflow > 0) {
       netIndices.push_back(i);
       netOverflows[i] = netOverflow;
     }
   }
-  LOG_TRACE("stage 1: %zu/%zu nets have overflows", netIndices.size(),
-            m_network->nets().size());
+  LOG_TRACE("stage 1: %zu/%i nets have overflows", netIndices.size(),
+            m_design->numNets());
   t1 = eplaseTime() - t;
   t = eplaseTime();
 
@@ -70,20 +67,19 @@ void GlobalRouter::route() {
         congestionView; // (2d) direction -> x -> y -> has overflow?
     gridGraph.extractCongestionView(congestionView);
     for (const int netIndex : netIndices) {
-      gridGraph.commitTree(m_network->nets()[netIndex]->routingTree(), true);
+      gridGraph.commitTree(m_design->net(netIndex)->routingTree(), true);
     }
     for (const int netIndex : netIndices) {
-      PatternRoute patternRoute(m_network->nets()[netIndex], gridGraph,
-                                parameters);
+      PatternRoute patternRoute(m_design->net(netIndex), gridGraph, parameters);
       patternRoute.constructSteinerTree();
       patternRoute.constructRoutingDAG();
       patternRoute.constructDetours(congestionView);
       patternRoute.run();
-      gridGraph.commitTree(m_network->nets()[netIndex]->routingTree());
+      gridGraph.commitTree(m_design->net(netIndex)->routingTree());
     }
     netIndices.clear();
-    for (int i = 0; i < m_network->nets().size(); i++) {
-      GRNet *net = m_network->nets()[i];
+    for (int i = 0; i < m_design->numNets(); i++) {
+      sca::Net *net = m_design->net(i);
       int netOverflow = gridGraph.checkOverflow(net->routingTree());
       if (netOverflow > 0) {
         netIndices.push_back(i);
@@ -91,8 +87,8 @@ void GlobalRouter::route() {
       }
     }
   }
-  LOG_TRACE("stage 2: %zu/%zu nets have overflows", netIndices.size(),
-            m_network->nets().size());
+  LOG_TRACE("stage 2: %zu/%i nets have overflows", netIndices.size(),
+            m_design->numNets());
   t2 = eplaseTime() - t;
   t = eplaseTime();
 
@@ -101,14 +97,14 @@ void GlobalRouter::route() {
   n3 = netIndices.size();
   if (netIndices.size() > 0) {
     for (const int netIndex : netIndices) {
-      GRNet *net = m_network->nets()[netIndex];
+      sca::Net *net = m_design->net(netIndex);
       gridGraph.commitTree(net->routingTree(), true);
     }
     GridGraphView<CostT> wireCostView;
     gridGraph.extractWireCostView(wireCostView);
     SparseGrid grid(10, 10, 0, 0);
     for (const int netIndex : netIndices) {
-      GRNet *net = m_network->nets()[netIndex];
+      sca::Net *net = m_design->net(netIndex);
       // gridGraph.commitTree(net.getRoutingTree(), true);
       // gridGraph.updateWireCostView(wireCostView, net.getRoutingTree());
       MazeRoute mazeRoute(net, gridGraph, parameters);
@@ -127,8 +123,8 @@ void GlobalRouter::route() {
       grid.step();
     }
     netIndices.clear();
-    for (int i = 0; i < m_network->nets().size(); i++) {
-      GRNet *net = m_network->nets()[i];
+    for (int i = 0; i < m_design->numNets(); i++) {
+      sca::Net *net = m_design->net(i);
       int netOverflow = gridGraph.checkOverflow(net->routingTree());
       if (netOverflow > 0) {
         netIndices.push_back(i);
@@ -136,8 +132,8 @@ void GlobalRouter::route() {
       }
     }
   }
-  LOG_TRACE("stage 3: %zu/%zu nets have overflows", netIndices.size(),
-            m_network->nets().size());
+  LOG_TRACE("stage 3: %zu/%i nets have overflows", netIndices.size(),
+            m_design->numNets());
   t3 = eplaseTime() - t;
   t = eplaseTime();
 
@@ -165,8 +161,8 @@ void GlobalRouter::printStatistics() const {
   flag.assign(gridGraph.getNumLayers(),
               vector<vector<int>>(gridGraph.getSize(0),
                                   vector<int>(gridGraph.getSize(1), -1)));
-  for (int id = 0; id < m_network->nets().size(); id++) {
-    GRNet *net = m_network->nets()[id];
+  for (int id = 0; id < m_design->numNets(); id++) {
+    sca::Net *net = m_design->net(id);
     vector<vector<int>> via_loc;
     if (net->routingTree() == nullptr) {
       LOG_ERROR("null GRTree net(id = %d)", id);
@@ -175,8 +171,8 @@ void GlobalRouter::printStatistics() const {
     if (net->routingTree()->children.size() == 0) {
       viaCount++;
     }
-    GRTreeNode::preorder(
-        net->routingTree(), [&](std::shared_ptr<GRTreeNode> node) {
+    sca::GRTreeNode::preorder(
+        net->routingTree(), [&](std::shared_ptr<sca::GRTreeNode> node) {
           for (const auto &child : node->children) {
             if (node->layerIdx == child->layerIdx) {
               unsigned direction = gridGraph.getLayerDirection(node->layerIdx);
@@ -212,7 +208,7 @@ void GlobalRouter::printStatistics() const {
   double overflow_slope = 0.5;
 
   CapacityT minResource = std::numeric_limits<CapacityT>::max();
-  GRPoint bottleneck(-1, -1, -1);
+  sca::PointOnLayerT<int> bottleneck(-1, -1, -1);
 
   for (unsigned z = parameters.min_routing_layer; z < gridGraph.getNumLayers();
        z++) {

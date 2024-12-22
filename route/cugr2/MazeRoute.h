@@ -5,8 +5,8 @@
 namespace cugr2 {
 
 struct SparseGrid {
-  utils::PointT<int> interval;
-  utils::PointT<int> offset;
+  sca::PointT<int> interval;
+  sca::PointT<int> offset;
   SparseGrid(int xInterval, int yInterval, int xOffset, int yOffset)
       : interval(xInterval, yInterval), offset(xOffset, yOffset) {}
   void step() {
@@ -22,12 +22,12 @@ struct SparseGrid {
 
 class SparseGraph {
 public:
-  SparseGraph(GRNet *_net, const GridGraph &graph3d, const Parameters &param)
+  SparseGraph(sca::Net *_net, const GridGraph &graph3d, const Parameters &param)
       : net(_net), gridGraph(graph3d), parameters(param) {}
   void init(GridGraphView<CostT> &wireCostView, SparseGrid &grid);
   int getNumVertices() const { return vertices.size(); }
   int getNumPseudoPins() const { return pseudoPins.size(); }
-  std::pair<utils::PointT<int>, utils::IntervalT<int>>
+  std::pair<sca::PointT<int>, sca::IntervalT<int>>
   getPseudoPin(int pinIndex) const {
     return pseudoPins[pinIndex];
   }
@@ -42,19 +42,21 @@ public:
   CostT getEdgeCost(const int vertex, const int edgeIndex) const {
     return costs[vertex][edgeIndex];
   }
-  GRPoint getPoint(const int vertex) const { return vertices[vertex]; }
+  sca::PointOnLayerT<int> getPoint(const int vertex) const {
+    return vertices[vertex];
+  }
 
 private:
   const Parameters &parameters;
   const GridGraph &gridGraph;
-  GRNet *net;
+  sca::Net *net;
 
-  std::vector<std::pair<utils::PointT<int>, utils::IntervalT<int>>> pseudoPins;
+  std::vector<std::pair<sca::PointT<int>, sca::IntervalT<int>>> pseudoPins;
 
   std::vector<int> xs;
   std::vector<int> ys;
 
-  std::vector<GRPoint> vertices;
+  std::vector<sca::PointOnLayerT<int>> vertices;
   std::vector<std::array<int, 3>> edges;
   std::vector<std::array<CostT, 3>> costs;
   // robin_hood::unordered_map<int, std::vector<int>> vertexPins;
@@ -77,7 +79,7 @@ struct Solution {
 
 class MazeRoute {
 public:
-  MazeRoute(GRNet *_net, const GridGraph &graph3d, const Parameters &param)
+  MazeRoute(sca::Net *_net, const GridGraph &graph3d, const Parameters &param)
       : net(_net), gridGraph(graph3d), parameters(param),
         graph(_net, graph3d, param) {}
 
@@ -91,7 +93,7 @@ public:
 private:
   const Parameters &parameters;
   const GridGraph &gridGraph;
-  GRNet *net;
+  sca::Net *net;
   SparseGraph graph;
 
   std::vector<std::shared_ptr<Solution>> solutions;

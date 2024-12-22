@@ -20,8 +20,7 @@ void SteinerTreeNode::preorder(
 
 void PatternRoute::constructSteinerTree() {
   // 1. Select access points
-  std::unordered_map<uint64_t,
-                     std::pair<utils::PointT<int>, utils::IntervalT<int>>>
+  std::unordered_map<uint64_t, std::pair<sca::PointT<int>, sca::IntervalT<int>>>
       selectedAccessPoints;
   gridGraph.selectAccessPoints(net, selectedAccessPoints);
 
@@ -41,7 +40,7 @@ void PatternRoute::constructSteinerTree() {
     stt::Tree flutetree = stt::flute(xs, ys, FLUTE_ACCURACY);
 
     const int numBranches = degree + degree - 2;
-    vector<utils::PointT<int>> steinerPoints;
+    vector<sca::PointT<int>> steinerPoints;
     steinerPoints.reserve(numBranches);
     vector<vector<int>> adjacentList(numBranches);
     for (int branchIndex = 0; branchIndex < numBranches; branchIndex++) {
@@ -143,9 +142,9 @@ void PatternRoute::constructPaths(std::shared_ptr<PatternRoutingNode> &start,
   } else {
     for (int pathIndex = 0; pathIndex <= 1;
          pathIndex++) { // two paths of different L-shape
-      utils::PointT<int> midPoint = pathIndex
-                                        ? utils::PointT<int>(start->x, end->y)
-                                        : utils::PointT<int>(end->x, start->y);
+      sca::PointT<int> midPoint = pathIndex
+                                      ? sca::PointT<int>(start->x, end->y)
+                                      : sca::PointT<int>(end->x, start->y);
       std::shared_ptr<PatternRoutingNode> mid =
           std::make_shared<PatternRoutingNode>(midPoint, numDagNodes++, true);
       mid->paths = {{end}};
@@ -247,10 +246,10 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
   //
   //         for (auto& scaffoldChild : scaffoldNode->children) {
   //             if (scaffoldNode->node) std::cout <<
-  //             (utils::PointT<int>)*scaffoldNode->node << " " <<
+  //             (sca::PointT<int>)*scaffoldNode->node << " " <<
   //             scaffoldNode->children.size(); else std::cout << "null";
   //             std::cout << " -> " <<
-  //             (utils::PointT<int>)*scaffoldChild->node; if
+  //             (sca::PointT<int>)*scaffoldChild->node; if
   //             (scaffoldNode->node) std::cout << " " <<
   //             congested(scaffoldNode->node, scaffoldChild->node); std::cout
   //             << std::endl; printScaffold(scaffoldChild);
@@ -264,10 +263,10 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
   //     }
   // }
 
-  std::function<void(std::shared_ptr<ScaffoldNode>, utils::IntervalT<int> &,
+  std::function<void(std::shared_ptr<ScaffoldNode>, sca::IntervalT<int> &,
                      vector<int> &, unsigned, bool)>
       getTrunkAndStems = [&](std::shared_ptr<ScaffoldNode> scaffoldNode,
-                             utils::IntervalT<int> &trunk, vector<int> &stems,
+                             sca::IntervalT<int> &trunk, vector<int> &stems,
                              unsigned direction, bool starting) {
         if (starting) {
           if (scaffoldNode->node) {
@@ -312,12 +311,12 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
         std::shared_ptr<PatternRoutingNode> treeNode = scaffoldNode->node;
         if (treeNode->fixedLayers.IsValid()) {
           std::shared_ptr<PatternRoutingNode> dupTreeNode =
-              std::make_shared<PatternRoutingNode>(
-                  (utils::PointT<int>)*treeNode, treeNode->fixedLayers,
-                  numDagNodes++);
+              std::make_shared<PatternRoutingNode>((sca::PointT<int>)*treeNode,
+                                                   treeNode->fixedLayers,
+                                                   numDagNodes++);
           std::shared_ptr<PatternRoutingNode> shiftedTreeNode =
-              std::make_shared<PatternRoutingNode>(
-                  (utils::PointT<int>)*treeNode, numDagNodes++);
+              std::make_shared<PatternRoutingNode>((sca::PointT<int>)*treeNode,
+                                                   numDagNodes++);
           (*shiftedTreeNode)[1 - direction] += shiftAmount;
           constructPaths(shiftedTreeNode, dupTreeNode);
           for (auto &treeChild : treeNode->children) {
@@ -338,8 +337,8 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
           return shiftedTreeNode;
         } else {
           std::shared_ptr<PatternRoutingNode> shiftedTreeNode =
-              std::make_shared<PatternRoutingNode>(
-                  (utils::PointT<int>)*treeNode, numDagNodes++);
+              std::make_shared<PatternRoutingNode>((sca::PointT<int>)*treeNode,
+                                                   numDagNodes++);
           (*shiftedTreeNode)[1 - direction] += shiftAmount;
           for (auto &treeChild : treeNode->children) {
             bool built = false;
@@ -364,13 +363,13 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
     for (std::shared_ptr<ScaffoldNode> scaffold : scaffolds[direction]) {
       assert(scaffold->children.size() == 1);
 
-      utils::IntervalT<int> trunk;
+      sca::IntervalT<int> trunk;
       vector<int> stems;
       getTrunkAndStems(scaffold, trunk, stems, direction, true);
       std::sort(stems.begin(), stems.end());
       int trunkPos = (*scaffold->children[0]->node)[1 - direction];
       int originalLength = getTotalStemLength(stems, trunkPos);
-      utils::IntervalT<int> shiftInterval(trunkPos);
+      sca::IntervalT<int> shiftInterval(trunkPos);
       int maxLengthIncrease = trunk.range() * parameters.max_detour_ratio;
       while (shiftInterval.low - 1 >= 0 &&
              getTotalStemLength(stems, shiftInterval.low - 1) -
@@ -387,7 +386,7 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
                  (shiftInterval.high - trunkPos) / (step + 1) >=
              parameters.target_detour_count)
         step++;
-      utils::IntervalT<int> dupShiftInterval = shiftInterval;
+      sca::IntervalT<int> dupShiftInterval = shiftInterval;
       shiftInterval.low =
           trunkPos - (trunkPos - shiftInterval.low) / step * step;
       shiftInterval.high =
@@ -424,7 +423,7 @@ void PatternRoute::constructDetours(GridGraphView<bool> &congestionView) {
             }
             std::shared_ptr<PatternRoutingNode> shiftedTreeNode =
                 std::make_shared<PatternRoutingNode>(
-                    (utils::PointT<int>)*treeNode, numDagNodes++);
+                    (sca::PointT<int>)*treeNode, numDagNodes++);
             (*shiftedTreeNode)[1 - direction] += shiftAmount;
             constructPaths(treeNode, shiftedTreeNode, 0);
             for (auto &treeChild : treeNode->children) {
@@ -510,7 +509,7 @@ void PatternRoute::calculateRoutingCosts(
     nonStackViaCosts[layerIndex] =
         nonStackViaCosts[layerIndex - 1] +
         gridGraph.getNonStackViaCost(layerIndex, *node);
-  utils::IntervalT<int> fixedLayers = node->fixedLayers;
+  sca::IntervalT<int> fixedLayers = node->fixedLayers;
   fixedLayers.low =
       std::min(fixedLayers.low, static_cast<int>(gridGraph.getNumLayers()) - 1);
   fixedLayers.high = std::max(fixedLayers.high, parameters.min_routing_layer);
@@ -558,7 +557,7 @@ void PatternRoute::calculateRoutingCosts(
   }
 }
 
-std::shared_ptr<GRTreeNode>
+std::shared_ptr<sca::GRTreeNode>
 PatternRoute::getRoutingTree(std::shared_ptr<PatternRoutingNode> &node,
                              int parentLayerIndex) {
   if (parentLayerIndex == -1) {
@@ -571,10 +570,10 @@ PatternRoute::getRoutingTree(std::shared_ptr<PatternRoutingNode> &node,
       }
     }
   }
-  std::shared_ptr<GRTreeNode> routingNode =
-      std::make_shared<GRTreeNode>(parentLayerIndex, node->x, node->y);
-  std::shared_ptr<GRTreeNode> lowestRoutingNode = routingNode;
-  std::shared_ptr<GRTreeNode> highestRoutingNode = routingNode;
+  std::shared_ptr<sca::GRTreeNode> routingNode =
+      std::make_shared<sca::GRTreeNode>(parentLayerIndex, node->x, node->y);
+  std::shared_ptr<sca::GRTreeNode> lowestRoutingNode = routingNode;
+  std::shared_ptr<sca::GRTreeNode> highestRoutingNode = routingNode;
   if (node->paths.size() > 0) {
     int pathIndex, layerIndex;
     vector<vector<std::shared_ptr<PatternRoutingNode>>> pathsOnLayer(
@@ -592,7 +591,7 @@ PatternRoute::getRoutingTree(std::shared_ptr<PatternRoutingNode> &node,
     for (int layerIndex = parentLayerIndex - 1; layerIndex >= 0; layerIndex--) {
       if (pathsOnLayer[layerIndex].size() > 0) {
         lowestRoutingNode->children.push_back(
-            std::make_shared<GRTreeNode>(layerIndex, node->x, node->y));
+            std::make_shared<sca::GRTreeNode>(layerIndex, node->x, node->y));
         lowestRoutingNode = lowestRoutingNode->children.back();
         for (auto &path : pathsOnLayer[layerIndex]) {
           lowestRoutingNode->children.push_back(
@@ -604,7 +603,7 @@ PatternRoute::getRoutingTree(std::shared_ptr<PatternRoutingNode> &node,
          layerIndex < gridGraph.getNumLayers(); layerIndex++) {
       if (pathsOnLayer[layerIndex].size() > 0) {
         highestRoutingNode->children.push_back(
-            std::make_shared<GRTreeNode>(layerIndex, node->x, node->y));
+            std::make_shared<sca::GRTreeNode>(layerIndex, node->x, node->y));
         highestRoutingNode = highestRoutingNode->children.back();
         for (auto &path : pathsOnLayer[layerIndex]) {
           highestRoutingNode->children.push_back(
@@ -614,12 +613,12 @@ PatternRoute::getRoutingTree(std::shared_ptr<PatternRoutingNode> &node,
     }
   }
   if (lowestRoutingNode->layerIdx > node->fixedLayers.low) {
-    lowestRoutingNode->children.push_back(
-        std::make_shared<GRTreeNode>(node->fixedLayers.low, node->x, node->y));
+    lowestRoutingNode->children.push_back(std::make_shared<sca::GRTreeNode>(
+        node->fixedLayers.low, node->x, node->y));
   }
   if (highestRoutingNode->layerIdx < node->fixedLayers.high) {
-    highestRoutingNode->children.push_back(
-        std::make_shared<GRTreeNode>(node->fixedLayers.high, node->x, node->y));
+    highestRoutingNode->children.push_back(std::make_shared<sca::GRTreeNode>(
+        node->fixedLayers.high, node->x, node->y));
   }
   return routingNode;
 }

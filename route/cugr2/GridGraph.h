@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../object/GRNetwork.hpp"
-#include "../object/GRTechnology.hpp"
+#include "../object/Design.hpp"
 #include "base.h"
 
 namespace cugr2 {
@@ -16,7 +15,7 @@ struct GraphEdge {
 template <typename Type>
 class GridGraphView : public std::vector<std::vector<std::vector<Type>>> {
 public:
-  bool check(const utils::PointT<int> &u, const utils::PointT<int> &v) const {
+  bool check(const sca::PointT<int> &u, const sca::PointT<int> &v) const {
     assert(u.x == v.x || u.y == v.y);
     if (u.y == v.y) {
       int l = std::min(u.x, v.x), h = std::max(u.x, v.x);
@@ -34,7 +33,7 @@ public:
     return false;
   }
 
-  Type sum(const utils::PointT<int> &u, const utils::PointT<int> &v) const {
+  Type sum(const sca::PointT<int> &u, const sca::PointT<int> &v) const {
     assert(u.x == v.x || u.y == v.y);
     Type res = 0;
     if (u.y == v.y) {
@@ -54,7 +53,7 @@ public:
 
 class GridGraph {
 public:
-  GridGraph(const GRTechnology *tech, const Parameters &params);
+  GridGraph(sca::Design *design, const Parameters &params);
   GridGraph(const GridGraph &) = delete;
   GridGraph &operator=(const GridGraph &) = delete;
 
@@ -75,7 +74,7 @@ public:
     return unit_overflow_costs[layerIndex];
   }
 
-  inline uint64_t hashCell(const GRPoint &point) const {
+  inline uint64_t hashCell(const sca::PointOnLayerT<int> &point) const {
     return ((uint64_t)point.layerIdx * xSize + point.x) * ySize + point.y;
   };
   inline uint64_t hashCell(const int x, const int y) const {
@@ -91,21 +90,21 @@ public:
   DBU getEdgeLength(unsigned direction, unsigned edgeIndex) const {
     return edgeLengths[direction][edgeIndex];
   }
-  CostT getWireCost(const int layerIndex, const utils::PointT<int> u,
-                    const utils::PointT<int> v) const;
-  CostT getViaCost(const int layerIndex, const utils::PointT<int> loc) const;
+  CostT getWireCost(const int layerIndex, const sca::PointT<int> u,
+                    const sca::PointT<int> v) const;
+  CostT getViaCost(const int layerIndex, const sca::PointT<int> loc) const;
   CostT getNonStackViaCost(const int layerIndex,
-                           const utils::PointT<int> loc) const;
+                           const sca::PointT<int> loc) const;
 
   // Misc
   void selectAccessPoints(
-      GRNet *net,
+      sca::Net *net,
       std::unordered_map<uint64_t,
-                         std::pair<utils::PointT<int>, utils::IntervalT<int>>>
+                         std::pair<sca::PointT<int>, sca::IntervalT<int>>>
           &selectedAccessPoints) const;
 
   // Methods for updating demands
-  void commitTree(const std::shared_ptr<GRTreeNode> &tree,
+  void commitTree(const std::shared_ptr<sca::GRTreeNode> &tree,
                   const bool reverse = false);
 
   // Checks
@@ -113,9 +112,9 @@ public:
                             const int y) const {
     return getEdge(layerIndex, x, y).getResource() < 0.0;
   }
-  int checkOverflow(const int layerIndex, const utils::PointT<int> u,
-                    const utils::PointT<int> v) const; // Check wire overflow
-  int checkOverflow(const std::shared_ptr<GRTreeNode> &tree)
+  int checkOverflow(const int layerIndex, const sca::PointT<int> u,
+                    const sca::PointT<int> v) const; // Check wire overflow
+  int checkOverflow(const std::shared_ptr<sca::GRTreeNode> &tree)
       const; // Check routing tree overflow (Only wires are checked)
 
   // 2D maps
@@ -124,7 +123,7 @@ public:
       GridGraphView<bool> &view) const; // 2D overflow look-up table
   void extractWireCostView(GridGraphView<CostT> &view) const;
   void updateWireCostView(GridGraphView<CostT> &view,
-                          std::shared_ptr<GRTreeNode> routingTree) const;
+                          std::shared_ptr<sca::GRTreeNode> routingTree) const;
 
   void clearDemand() {
     totalLength = 0;
@@ -137,6 +136,7 @@ public:
   };
 
 private:
+  sca::Design *m_design;
   const Parameters &parameters;
 
   unsigned nLayers;
@@ -162,15 +162,15 @@ private:
   std::vector<std::vector<std::vector<bool>>> flag;
 
   inline double logistic(const CapacityT &input, const double slope) const;
-  CostT getWireCost(const int layerIndex, const utils::PointT<int> lower,
+  CostT getWireCost(const int layerIndex, const sca::PointT<int> lower,
                     const CapacityT demand = 1.0) const;
 
   // Methods for updating demands
-  void commitWire(const int layerIndex, const utils::PointT<int> lower,
+  void commitWire(const int layerIndex, const sca::PointT<int> lower,
                   const bool reverse = false);
-  void commitVia(const int layerIndex, const utils::PointT<int> loc,
+  void commitVia(const int layerIndex, const sca::PointT<int> loc,
                  const bool reverse = false);
-  void commitNonStackVia(const int layerIndex, const utils::PointT<int> loc,
+  void commitNonStackVia(const int layerIndex, const sca::PointT<int> loc,
                          const bool reverse);
 };
 

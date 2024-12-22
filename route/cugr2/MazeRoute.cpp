@@ -11,8 +11,7 @@ using std::vector;
 
 void SparseGraph::init(GridGraphView<CostT> &wireCostView, SparseGrid &grid) {
   // 0. Create pseudo pins
-  std::unordered_map<uint64_t,
-                     std::pair<utils::PointT<int>, utils::IntervalT<int>>>
+  std::unordered_map<uint64_t, std::pair<sca::PointT<int>, sca::IntervalT<int>>>
       selectedAccessPoints;
   gridGraph.selectAccessPoints(net, selectedAccessPoints);
   pseudoPins.reserve(selectedAccessPoints.size());
@@ -22,8 +21,8 @@ void SparseGraph::init(GridGraphView<CostT> &wireCostView, SparseGrid &grid) {
   // 1. Collect additional routing grid lines
   vector<int> pxs;
   vector<int> pys;
-  pxs.reserve(net->pins().size());
-  pys.reserve(net->pins().size());
+  pxs.reserve(net->numPins());
+  pys.reserve(net->numPins());
   for (const auto &pin : pseudoPins) {
     pxs.emplace_back(pin.first.x);
     pys.emplace_back(pin.first.y);
@@ -81,8 +80,8 @@ void SparseGraph::init(GridGraphView<CostT> &wireCostView, SparseGrid &grid) {
                               const int yi) {
     const int u = getVertexIndex(direction, xi, yi);
     const int v = direction == MetalLayer::H ? u + 1 : u + xs.size();
-    utils::PointT<int> U(xs[xi], ys[yi]);
-    utils::PointT<int> V(xs[xi + 1 - direction], ys[yi + direction]);
+    sca::PointT<int> U(xs[xi], ys[yi]);
+    sca::PointT<int> V(xs[xi + 1 - direction], ys[yi + direction]);
 
     edges[u][0] = v;
     edges[v][1] = u;
@@ -146,7 +145,7 @@ void SparseGraph::init(GridGraphView<CostT> &wireCostView, SparseGrid &grid) {
 void MazeRoute::run() {
   vector<CostT> minCosts(graph.getNumVertices(),
                          std::numeric_limits<CostT>::max());
-  solutions.reserve(net->pins().size());
+  solutions.reserve(net->numPins());
   auto compareSolution = [&](const std::shared_ptr<Solution> &lhs,
                              const std::shared_ptr<Solution> &rhs) {
     return lhs->cost > rhs->cost;
@@ -161,7 +160,7 @@ void MazeRoute::run() {
       minCosts[solution->vertex] = solution->cost;
   };
 
-  vector<bool> visited(net->pins().size(), false);
+  vector<bool> visited(net->numPins(), false);
   const int startPinIndex = 0;
   visited[startPinIndex] = true;
   int numDetached = graph.getNumPseudoPins() - 1;
@@ -228,7 +227,7 @@ std::shared_ptr<SteinerTreeNode> MazeRoute::getSteinerTree() const {
     while (temp) {
       auto it = created.find(temp->vertex);
       if (it == created.end()) {
-        utils::PointT<int> point = graph.getPoint(temp->vertex);
+        sca::PointT<int> point = graph.getPoint(temp->vertex);
         auto node = std::make_shared<SteinerTreeNode>(point);
         created.emplace(temp->vertex, node);
         if (lastNode)
