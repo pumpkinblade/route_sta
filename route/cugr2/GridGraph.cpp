@@ -178,12 +178,10 @@ void GridGraph::selectAccessPoints(
   selectedAccessPoints.reserve(net->numPins());
   sca::BoxT<int> bbox;
 
-  std::vector<std::vector<sca::PointOnLayerT<int>>> pts_per_pin(net->numPins());
   for (int i = 0; i < net->numPins(); i++) {
     sca::Pin *pin = net->pin(i);
-    m_design->grid()->computeAccessPoints(pin, pts_per_pin[i]);
-  }
-  for (const auto &pts : pts_per_pin) {
+    std::vector<sca::PointOnLayerT<int>> pts;
+    m_design->grid()->computeAccessPoints(pin, pts);
     for (const sca::PointOnLayerT<int> &pt : pts) {
       bbox.Update(pt);
     }
@@ -191,7 +189,8 @@ void GridGraph::selectAccessPoints(
   sca::PointT<int> netCenter(bbox.cx(), bbox.cy());
   for (int i = 0; i < net->numPins(); i++) {
     sca::Pin *pin = net->pin(i);
-    const auto &accessPoints = pts_per_pin[i];
+    std::vector<sca::PointOnLayerT<int>> accessPoints;
+    m_design->grid()->computeAccessPoints(pin, accessPoints);
     std::pair<int, int> bestAccessDist = {0, std::numeric_limits<int>::max()};
     int bestIndex = -1;
     for (int index = 0; index < accessPoints.size(); index++) {

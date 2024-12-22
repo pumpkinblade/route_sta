@@ -107,11 +107,11 @@ DBU Grid::wireLength(const PointT<int> &p, const PointT<int> &q) const {
 void Grid::computeAccessPoints(Pin *pin, std::vector<PointOnLayerT<int>> &pts) {
   Instance *inst = pin->instance();
   Libcell *libcell = inst->libcell();
-  BoxT<DBU> inst_box(inst->lx(), inst->ly(),
-                     inst->lx() + static_cast<DBU>(libcell->width()),
-                     inst->ly() + static_cast<DBU>(libcell->height()));
-  Port *port = libcell->findPort(pin->name());
   double dbu = m_design->dbu();
+  BoxT<DBU> inst_box(inst->lx(), inst->ly(),
+                     inst->lx() + static_cast<DBU>(dbu * libcell->width()),
+                     inst->ly() + static_cast<DBU>(dbu * libcell->height()));
+  Port *port = libcell->findPort(pin->name());
   ASSERT(port, "null port");
 
   for (int i = 0; i < port->numShapes(); i++) {
@@ -145,6 +145,11 @@ void Grid::computeAccessPoints(Pin *pin, std::vector<PointOnLayerT<int>> &pts) {
 
   std::sort(pts.begin(), pts.end());
   pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+
+  ASSERT(pts.size() > 0, "empty access points");
+  for (const auto &pt : pts) {
+    ASSERT(pt.layerIdx >= 0 && pt.x >= 0 && pt.y >= 0, "illegal points");
+  }
 }
 
 } // namespace sca
