@@ -50,7 +50,8 @@ If you install CUDD and LEMON to other directory, use "cmake -B build -DCMAKE_PR
 # 2. How to run
 
 ```bash
-./build/route_sta ./test/test.tcl
+cd test/
+../build/route_sta ./test.tcl
 ```
 
 See also https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
