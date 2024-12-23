@@ -40,29 +40,31 @@ proc report_timing {} {
 # report_timing
 # exit
 
-### def+guide -> timing report
-read_liberty "./Nangate45/Nangate45_typ.lib"
-sca::read_lef "./Nangate45/Nangate45.lef"
-sca::read_def "./gcd_nangate45_new.def"
-sca::link_design gcd
-sca::read_guide "./gcd_nangate45_new.guide"
-sca::estimate_parasitics
-setup_sta_env
-report_timing
-### wns -0.06 tns -0.37 power 2.33e-3
-exit
-
-# ### def+cugr2 -> timing report
+# ### def+guide -> timing report
 # read_liberty "./Nangate45/Nangate45_typ.lib"
 # sca::read_lef "./Nangate45/Nangate45.lef"
 # sca::read_def "./gcd_nangate45_new.def"
 # sca::link_design gcd
-# sca::run_cugr2
+# sca::read_guide "./gcd_nangate45_new.guide"
 # sca::estimate_parasitics
 # setup_sta_env
 # report_timing
-# ### wns -0.06 tns -0.38 power 2.33e-3
+# ### wns -0.06 tns -0.37 power 2.33e-3
 # exit
+
+### def+cugr2 -> timing report
+read_liberty "./Nangate45/Nangate45_typ.lib"
+sca::read_lef "./Nangate45/Nangate45.lef"
+sca::read_def "./gcd_nangate45_new.def"
+sca::link_design gcd
+sca::run_cugr2
+sca::read_guide "./gcd_nangate45_new.guide"
+sca::write_guide "./gcd_nangate_new-cugr2.guide"
+sca::estimate_parasitics
+setup_sta_env
+report_timing
+### wns -0.06 tns -0.38 power 2.33e-3
+exit
 
 # # set_hierarchy_separator .
 # read_liberty "./Nangate45/Nangate45_typ.lib"

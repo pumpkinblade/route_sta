@@ -27,8 +27,8 @@ public:
                                  sta::NetworkReader *);
 
   int readGuide(const char *guide_file);
-  // int writeGuide(const char *guide_file);
-  // int writeSlack(const char *slack_file);
+  bool writeGuide(const char *guide_file);
+  int writeSlack(const char *slack_file);
 
   int runCugr2();
   int estimateParasitcs();

@@ -5,6 +5,7 @@
 #include "../object/Route.hpp"
 #include <sta/Network.hh>
 #include <fstream>
+#include <iomanip>
 
 namespace sca {
 std::unique_ptr<Context> Context::s_ctx;
@@ -156,17 +157,18 @@ int Context::readGuide(const char *guide_file) {
   return true;
 }
 
-/* bool Context::writeGuide(const char *guide_file) {
+bool Context::writeGuide(const char *guide_file) {
   std::ofstream fout(guide_file);
-  for (GRNet *net : m_network->nets()) {
+  for (const auto& net_ptr : m_design->nets()) {
+    sca::Net* net = net_ptr.get();
     fout << net->name() << std::endl;
     if (net->routingTree() == nullptr) {
       fout << "(\n)\n";
     } else if (net->routingTree()->children.size() == 0) {
       fout << "(\n";
       const auto &tree = net->routingTree();
-      GRPoint p = m_tech->gcellToDbu(*tree);
-      std::string layer_name = m_tech->layerName(p.layerIdx);
+      PointOnLayerT<int> p = m_design->grid()->gcellToDbu(*tree);
+      std::string layer_name = m_tech->layer(p.layerIdx)->name();
       fout << p.x << " " << p.y << " " << layer_name << " " << p.x << " " << p.y
            << " " << layer_name << "\n";
       fout << ")\n";
@@ -178,10 +180,10 @@ int Context::readGuide(const char *guide_file) {
               auto [p_x, q_x] = std::minmax(node->x, child->x);
               auto [p_y, q_y] = std::minmax(node->y, child->y);
               auto [p_z, q_z] = std::minmax(node->layerIdx, child->layerIdx);
-              GRPoint p = m_tech->gcellToDbu(GRPoint(p_z, p_x, p_y));
-              GRPoint q = m_tech->gcellToDbu(GRPoint(q_z, q_x, q_y));
-              std::string p_layer_name = m_tech->layerName(p.layerIdx);
-              std::string q_layer_name = m_tech->layerName(q.layerIdx);
+              PointOnLayerT<int> p = m_design->grid()->gcellToDbu(PointOnLayerT<int>(p_z, p_x, p_y));
+              PointOnLayerT<int> q = m_design->grid()->gcellToDbu(PointOnLayerT<int>(q_z, q_x, q_y));
+              std::string p_layer_name = m_tech->layer(p.layerIdx)->name();
+              std::string q_layer_name = m_tech->layer(q.layerIdx)->name();
               fout << p.x << " " << p.y << " " << p_layer_name << " " << q.x
                    << " " << q.y << " " << q_layer_name << "\n";
             }
@@ -190,9 +192,9 @@ int Context::readGuide(const char *guide_file) {
     }
   }
   return true;
-} */
+}
 
-/* int Context::writeSlack(const char *slack_file) {
+int Context::writeSlack(const char *slack_file) {
   std::ofstream fout(slack_file);
   if (!fout) {
     LOG_ERROR("can not open file %s", slack_file);
@@ -204,7 +206,7 @@ int Context::readGuide(const char *guide_file) {
     fout << net->name() << " " << std::setprecision(5) << slack << '\n';
   }
   return 0;
-} */
+}
 
 int Context::runCugr2() {
   cugr2::Parameters params;

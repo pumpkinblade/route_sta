@@ -63,25 +63,23 @@ static int read_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
   return sca::Context::ctx()->readGuide(guide_file) ? TCL_OK : TCL_ERROR;
 }
 
-// static int write_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
-//                            Tcl_Obj *CONST objv[]) {
-//   if (objc != 2) {
-//     Tcl_WrongNumArgs(interp, objc, objv, "Usage : sca::write_guide
-//     guide_file"); return TCL_ERROR;
-//   }
-//   const char *guide_file = Tcl_GetStringFromObj(objv[1], nullptr);
-//   return Context::ctx()->writeGuide(guide_file) ? TCL_OK : TCL_ERROR;
-// }
+static int write_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
+                           Tcl_Obj *CONST objv[]) {
+  if (objc != 2) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : sca::write_guide guide_file"); return TCL_ERROR;
+  }
+  const char *guide_file = Tcl_GetStringFromObj(objv[1], nullptr);
+  return sca::Context::ctx()->writeGuide(guide_file) ? TCL_OK : TCL_ERROR;
+}
 
-// static int write_slack_cmd(ClientData, Tcl_Interp *interp, int objc,
-//                            Tcl_Obj *CONST objv[]) {
-//   if (objc != 2) {
-//     Tcl_WrongNumArgs(interp, objc, objv, "Usage : sca::write_slack
-//     slack_file"); return TCL_ERROR;
-//   }
-//   const char *slack_file = Tcl_GetStringFromObj(objv[1], nullptr);
-//   return Context::ctx()->writeSlack(slack_file) ? TCL_OK : TCL_ERROR;
-// }
+static int write_slack_cmd(ClientData, Tcl_Interp *interp, int objc,
+                           Tcl_Obj *CONST objv[]) {
+  if (objc != 2) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : sca::write_slack slack_file"); return TCL_ERROR;
+  }
+  const char *slack_file = Tcl_GetStringFromObj(objv[1], nullptr);
+  return sca::Context::ctx()->writeSlack(slack_file) ? TCL_OK : TCL_ERROR;
+}
 
 int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "sca::read_lef", read_lef_cmd, nullptr, nullptr);
@@ -96,11 +94,11 @@ int Route_Init(Tcl_Interp *interp) {
 
   Tcl_CreateObjCommand(interp, "sca::read_guide", read_guide_cmd, nullptr,
                        nullptr);
-  // Tcl_CreateObjCommand(interp, "sca::write_guide", write_guide_cmd, nullptr,
-  //                      nullptr);
-  // Tcl_CreateObjCommand(interp, "sca::write_slack", write_slack_cmd, nullptr,
-  //                      nullptr);
-  // Tcl_CreateObjCommand(interp, "sca::link_design", link_design_cmd, nullptr,
-  //                      nullptr);
+  Tcl_CreateObjCommand(interp, "sca::write_guide", write_guide_cmd, nullptr,
+                       nullptr);
+  Tcl_CreateObjCommand(interp, "sca::write_slack", write_slack_cmd, nullptr,
+                       nullptr);
+  Tcl_CreateObjCommand(interp, "sca::link_design", link_design_cmd, nullptr,
+                       nullptr);
   return TCL_OK;
 }
