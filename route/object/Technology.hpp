@@ -102,7 +102,7 @@ public:
   int numCutLayers() const { return static_cast<int>(m_cut_layers.size()); }
   int numLibcells() const { return static_cast<int>(m_libcells.size()); }
 
-  Layer *layer(int idx) { return m_layers[idx].get(); }
+  Layer *layer (int idx) const { return m_layers[idx].get(); }
   CutLayer *cutLayer(int idx) { return m_cut_layers[idx].get(); }
   Libcell *libcell(int idx) { return m_libcells[idx].get(); }
 

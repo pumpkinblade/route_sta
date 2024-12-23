@@ -53,15 +53,15 @@ static int estimate_parasitics_cmd(ClientData, Tcl_Interp *interp, int objc,
   return sca::Context::ctx()->estimateParasitcs() ? TCL_OK : TCL_ERROR;
 }
 
-// static int read_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
-//                           Tcl_Obj *CONST objv[]) {
-//   if (objc != 2) {
-//     Tcl_WrongNumArgs(interp, objc, objv, "Usage : sca::read_guide
-//     guide_file"); return TCL_ERROR;
-//   }
-//   const char *guide_file = Tcl_GetStringFromObj(objv[1], nullptr);
-//   return Context::ctx()->readGuide(guide_file) ? TCL_OK : TCL_ERROR;
-// }
+static int read_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
+                          Tcl_Obj *CONST objv[]) {
+  if (objc != 2) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : sca::read_guide guide_file"); 
+    return TCL_ERROR;
+  }
+  const char *guide_file = Tcl_GetStringFromObj(objv[1], nullptr);
+  return sca::Context::ctx()->readGuide(guide_file) ? TCL_OK : TCL_ERROR;
+}
 
 // static int write_guide_cmd(ClientData, Tcl_Interp *interp, int objc,
 //                            Tcl_Obj *CONST objv[]) {
@@ -94,8 +94,8 @@ int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "sca::estimate_parasitics",
                        estimate_parasitics_cmd, nullptr, nullptr);
 
-  // Tcl_CreateObjCommand(interp, "sca::read_guide", read_guide_cmd, nullptr,
-  //                      nullptr);
+  Tcl_CreateObjCommand(interp, "sca::read_guide", read_guide_cmd, nullptr,
+                       nullptr);
   // Tcl_CreateObjCommand(interp, "sca::write_guide", write_guide_cmd, nullptr,
   //                      nullptr);
   // Tcl_CreateObjCommand(interp, "sca::write_slack", write_slack_cmd, nullptr,

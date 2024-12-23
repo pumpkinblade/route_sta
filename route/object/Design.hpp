@@ -76,6 +76,8 @@ public:
   void connect(Pin *pin);
   int numPins() const { return static_cast<int>(m_pins.size()); }
   Pin *pin(int idx) const { return m_pins[idx]; }
+  const std::vector<Pin *> &pins() const { return m_pins; }
+
 
   std::shared_ptr<GRTreeNode> routingTree() const { return m_tree; }
   void setRoutingTree(std::shared_ptr<GRTreeNode> tree) { m_tree = tree; }
@@ -115,6 +117,8 @@ public:
   int numNets() const { return static_cast<int>(m_nets.size()); }
   Instance *instance(int idx) { return m_instances[idx].get(); }
   Net *net(int idx) { return m_nets[idx].get(); }
+  const std::vector<std::unique_ptr<Net>> &nets() const { return m_nets; }
+
 
 private:
   Technology *m_tech;

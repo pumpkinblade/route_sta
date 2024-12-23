@@ -39,6 +39,9 @@ public:
   }
 
   void computeAccessPoints(Pin *pin, std::vector<PointOnLayerT<int>> &pts);
+  
+  PointOnLayerT<int> gcellToDbu(const PointOnLayerT<int> &p) const;
+  PointOnLayerT<int> dbuToGcell(const PointOnLayerT<int> &p) const;
 
 private:
   Design *m_design;

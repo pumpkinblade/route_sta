@@ -26,7 +26,7 @@ public:
   static sta::Instance *linkFunc(const char *top_cell_name, bool, sta::Report *,
                                  sta::NetworkReader *);
 
-  // int readGuide(const char *guide_file);
+  int readGuide(const char *guide_file);
   // int writeGuide(const char *guide_file);
   // int writeSlack(const char *slack_file);
 

@@ -152,4 +152,20 @@ void Grid::computeAccessPoints(Pin *pin, std::vector<PointOnLayerT<int>> &pts) {
   }
 }
 
+PointOnLayerT<int> Grid::dbuToGcell(const PointOnLayerT<int> &p) const {
+  auto x_it =
+      std::upper_bound(m_grid_points_x.begin(), m_grid_points_x.end(), p.x);
+  auto y_it =
+      std::upper_bound(m_grid_points_y.begin(), m_grid_points_y.end(), p.y);
+  int x = static_cast<int>(std::distance(m_grid_points_x.begin(), x_it)) - 1;
+  int y = static_cast<int>(std::distance(m_grid_points_y.begin(), y_it)) - 1;
+  return PointOnLayerT<int>(p.layerIdx, x, y);
+}
+
+PointOnLayerT<int> Grid::gcellToDbu(const PointOnLayerT<int> &p) const {
+  int x = (m_grid_points_x[p.x] + m_grid_points_x[p.x + 1]) / 2;
+  int y = (m_grid_points_y[p.y] + m_grid_points_y[p.y + 1]) / 2;
+  return PointOnLayerT<int>(p.layerIdx, x, y);
+}
+
 } // namespace sca

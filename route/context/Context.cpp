@@ -2,7 +2,9 @@
 #include "../cugr2/GlobalRouter.h"
 #include "../parser/parser.hpp"
 #include "../util/log.hpp"
+#include "../object/Route.hpp"
 #include <sta/Network.hh>
+#include <fstream>
 
 namespace sca {
 std::unique_ptr<Context> Context::s_ctx;
@@ -50,7 +52,7 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
   return 0;
 }
 
-/* int Context::readGuide(const char *guide_file) {
+int Context::readGuide(const char *guide_file) {
   std::ifstream fin(guide_file);
   if (!fin) {
     LOG_ERROR("can not open file %s", guide_file);
@@ -58,8 +60,8 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
   }
 
   std::string line;
-  std::vector<GRNet *> nets;
-  std::vector<std::vector<std::pair<GRPoint, GRPoint>>> net_routes;
+  std::vector<Net *> nets;
+  std::vector<std::vector<std::pair<PointOnLayerT<int>, PointOnLayerT<int>>>> net_routes;
   while (fin.good()) {
     std::getline(fin, line);
     if (line == "(" || line.empty() || line == ")")
@@ -74,22 +76,23 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
     if (words.size() == 1) {
       // new net
       auto it =
-          std::find_if(m_network->nets().begin(), m_network->nets().end(),
-                       [&](const GRNet *n) { return n->name() == words[0]; });
-      if (it == m_network->nets().end()) {
+          std::find_if(m_design->nets().begin(), m_design->nets().end(),
+                       [&](const std::unique_ptr<sca::Net>& n) { return n->name() == words[0]; });
+      if (it == m_design->nets().end()) {
         LOG_ERROR("Could find net %s", words[0].c_str());
         return false;
       }
-      nets.push_back(*it);
+      
+      nets.push_back(m_design->findNet((*it)->name()));
       net_routes.emplace_back();
     } else {
       // segment
-      GRPoint p(m_tech->findLayer(words[2]), std::stoi(words[0]),
+      PointOnLayerT<int> p(m_tech->findLayer(words[2])->idx(), std::stoi(words[0]),
                 std::stoi(words[1]));
-      GRPoint q(m_tech->findLayer(words[5]), std::stoi(words[3]),
+      PointOnLayerT<int> q(m_tech->findLayer(words[5])->idx(), std::stoi(words[3]),
                 std::stoi(words[4]));
-      p = m_tech->dbuToGcell(p);
-      q = m_tech->dbuToGcell(q);
+      p = m_design->grid()->dbuToGcell(p);
+      q = m_design->grid()->dbuToGcell(q);
       net_routes.back().emplace_back(p, q);
     }
   }
@@ -101,9 +104,12 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
     std::vector<int> ap_indices(nets[i]->pins().size(), -1);
     // check end points
     for (size_t j = 0; j < nets[i]->pins().size(); j++) {
-      GRPin *pin = nets[i]->pins()[j];
-      for (size_t k = 0; k < pin->accessPoints().size(); k++) {
-        const auto &ap = pin->accessPoints()[k];
+      Pin *pin = nets[i]->pins()[j];
+      // compute local access_points
+      std::vector<PointOnLayerT<int>> access_points;
+      m_design->grid()->computeAccessPoints(pin, access_points);
+      for (size_t k = 0; k < access_points.size(); k++) {
+        const auto &ap = access_points[k];
         if (ap.x == tree->x && ap.y == tree->y && ap.layerIdx == tree->layerIdx)
           ap_indices[j] = static_cast<int>(k);
       }
@@ -112,9 +118,12 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
     GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
       for (const auto &child : node->children) {
         for (size_t j = 0; j < nets[i]->pins().size(); j++) {
-          GRPin *pin = nets[i]->pins()[j];
-          for (size_t k = 0; k < pin->accessPoints().size(); k++) {
-            const auto &ap = pin->accessPoints()[k];
+          Pin *pin = nets[i]->pins()[j];
+          // compute local access_points
+          std::vector<PointOnLayerT<int>> access_points;
+          m_design->grid()->computeAccessPoints(pin, access_points);
+          for (size_t k = 0; k < access_points.size(); k++) {
+            const auto &ap = access_points[k];
             auto [init_x, final_x] = std::minmax(node->x, child->x);
             auto [init_y, final_y] = std::minmax(node->y, child->y);
             auto [init_z, final_z] =
@@ -136,7 +145,10 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
     }
 
     for (size_t j = 0; j < nets[i]->pins().size(); j++) {
-      nets[i]->pins()[j]->setAccessIndex(ap_indices[j]);
+      // compute local access_points
+      std::vector<PointOnLayerT<int>> access_points;
+      m_design->grid()->computeAccessPoints(nets[i]->pins()[j], access_points);
+      nets[i]->pins()[j]->setPosition(access_points[ap_indices[j]]);
     }
     nets[i]->setRoutingTree(tree);
   }
@@ -144,7 +156,7 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
   return true;
 }
 
-bool Context::writeGuide(const char *guide_file) {
+/* bool Context::writeGuide(const char *guide_file) {
   std::ofstream fout(guide_file);
   for (GRNet *net : m_network->nets()) {
     fout << net->name() << std::endl;
