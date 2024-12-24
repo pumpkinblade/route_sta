@@ -161,7 +161,7 @@ static void initStaApp(int &argc, char *argv[], Tcl_Interp *interp) {
   evalTclInit(interp, tcl_inits);
   Tcl_Eval(interp, "init_sta_cmds");
 
-  Route_Init(interp);
+  sca::Route_Init(interp);
 }
 
 static void showUsage(const char *prog, const char *init_filename) {

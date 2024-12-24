@@ -262,16 +262,12 @@ static std::shared_ptr<GRTreeNode> constructTree(std::vector<RouteSegment<int>> 
 
 
 std::shared_ptr<GRTreeNode>
-buildTree(const std::vector<std::pair<PointOnLayerT<int>, PointOnLayerT<int>>> &segments,
+buildTree(const std::vector<RouteSegment<int>> &segments,
           const Technology *tech) {
   if (segments.size() == 0)
     return nullptr;
 
-  std::vector<RouteSegment<int>> segs;
-  segs.reserve(segments.size());
-  for (const auto &[p, q] : segments) {
-    segs.emplace_back(p, q);
-  }
+  std::vector<RouteSegment<int>> segs(segments);
 
   // printf("segments: \n");
   // for (const auto &[p, q] : segs)
@@ -310,7 +306,7 @@ buildTree(const std::vector<std::pair<PointOnLayerT<int>, PointOnLayerT<int>>> &
 
 std::shared_ptr<GRTreeNode> trimTree(std::shared_ptr<GRTreeNode> tree,
                                      const Technology *tech) {
-  std::vector<std::pair<PointOnLayerT<int>, PointOnLayerT<int>>> segments;
+  std::vector<RouteSegment<int>> segments;
   GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
     for (auto child : node->children) {
       segments.emplace_back(PointOnLayerT<int>(node->layerIdx, node->x, node->y),

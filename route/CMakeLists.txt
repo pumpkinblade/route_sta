@@ -42,6 +42,7 @@ add_library(route
 
   ${ROUTE_HOME}/parser/lefParser.cpp
   ${ROUTE_HOME}/parser/defParser.cpp
+  ${ROUTE_HOME}/parser/guideParser.cpp
 
   ${ROUTE_HOME}/tcl/RouteTcl.cpp
 

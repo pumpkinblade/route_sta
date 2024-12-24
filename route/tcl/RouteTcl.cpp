@@ -4,6 +4,8 @@
 #include <sta/Sta.hh>
 #include <tcl.h>
 
+namespace sca {
+
 static int read_lef_cmd(ClientData, Tcl_Interp *interp, int objc,
                         Tcl_Obj *CONST objv[]) {
   if (objc != 2) {
@@ -101,4 +103,6 @@ int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "sca::link_design", link_design_cmd, nullptr,
                        nullptr);
   return TCL_OK;
+}
+
 }

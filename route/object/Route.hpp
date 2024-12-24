@@ -37,7 +37,7 @@ GRTreeNode::preorder(std::shared_ptr<GRTreeNode> node,
 class Technology;
 
 std::shared_ptr<GRTreeNode>
-buildTree(const std::vector<std::pair<PointOnLayerT<int>, PointOnLayerT<int>>> &segments,
+buildTree(const std::vector<RouteSegment<int>> &segments,
           const Technology *tech);
 
 // This function will split the tree into segments, and reconstruct the tree

@@ -54,113 +54,13 @@ int Context::linkDesign(const char *design_name __attribute_maybe_unused__) {
 }
 
 int Context::readGuide(const char *guide_file) {
-  std::ifstream fin(guide_file);
-  if (!fin) {
-    LOG_ERROR("can not open file %s", guide_file);
-    return false;
-  }
-
-  std::string line;
-  std::vector<Net *> nets;
-  std::vector<std::vector<std::pair<PointOnLayerT<int>, PointOnLayerT<int>>>> net_routes;
-  while (fin.good()) {
-    std::getline(fin, line);
-    if (line == "(" || line.empty() || line == ")")
-      continue;
-    std::istringstream iss(line);
-    std::vector<std::string> words;
-    while (!iss.eof()) {
-      std::string word;
-      iss >> word;
-      words.push_back(word);
-    }
-    if (words.size() == 1) {
-      // new net
-      auto it =
-          std::find_if(m_design->nets().begin(), m_design->nets().end(),
-                       [&](const std::unique_ptr<sca::Net>& n) { return n->name() == words[0]; });
-      if (it == m_design->nets().end()) {
-        LOG_ERROR("Could find net %s", words[0].c_str());
-        return false;
-      }
-      
-      nets.push_back(m_design->findNet((*it)->name()));
-      net_routes.emplace_back();
-    } else {
-      // segment
-      PointOnLayerT<int> p(m_tech->findLayer(words[2])->idx(), std::stoi(words[0]),
-                std::stoi(words[1]));
-      PointOnLayerT<int> q(m_tech->findLayer(words[5])->idx(), std::stoi(words[3]),
-                std::stoi(words[4]));
-      p = m_design->grid()->dbuToGcell(p);
-      q = m_design->grid()->dbuToGcell(q);
-      net_routes.back().emplace_back(p, q);
-    }
-  }
-
-  for (size_t i = 0; i < nets.size(); i++) {
-    auto tree = buildTree(net_routes[i], m_tech.get());
-
-    // ensure access point
-    std::vector<int> ap_indices(nets[i]->pins().size(), -1);
-    // check end points
-    for (size_t j = 0; j < nets[i]->pins().size(); j++) {
-      Pin *pin = nets[i]->pins()[j];
-      // compute local access_points
-      std::vector<PointOnLayerT<int>> access_points;
-      m_design->grid()->computeAccessPoints(pin, access_points);
-      for (size_t k = 0; k < access_points.size(); k++) {
-        const auto &ap = access_points[k];
-        if (ap.x == tree->x && ap.y == tree->y && ap.layerIdx == tree->layerIdx)
-          ap_indices[j] = static_cast<int>(k);
-      }
-    }
-    // check itermediate points
-    GRTreeNode::preorder(tree, [&](std::shared_ptr<GRTreeNode> node) {
-      for (const auto &child : node->children) {
-        for (size_t j = 0; j < nets[i]->pins().size(); j++) {
-          Pin *pin = nets[i]->pins()[j];
-          // compute local access_points
-          std::vector<PointOnLayerT<int>> access_points;
-          m_design->grid()->computeAccessPoints(pin, access_points);
-          for (size_t k = 0; k < access_points.size(); k++) {
-            const auto &ap = access_points[k];
-            auto [init_x, final_x] = std::minmax(node->x, child->x);
-            auto [init_y, final_y] = std::minmax(node->y, child->y);
-            auto [init_z, final_z] =
-                std::minmax(node->layerIdx, child->layerIdx);
-            if (init_x <= ap.x && ap.x <= final_x && init_y <= ap.y &&
-                ap.y <= final_y && init_z <= ap.layerIdx &&
-                ap.layerIdx <= final_z)
-              ap_indices[j] = static_cast<int>(k);
-          }
-        }
-      }
-    });
-
-    for (size_t j = 0; j < nets[i]->pins().size(); j++) {
-      if (ap_indices[j] < 0) {
-        LOG_ERROR("guide of net %s doesn't cover", nets[i]->name().c_str());
-        return false;
-      }
-    }
-
-    for (size_t j = 0; j < nets[i]->pins().size(); j++) {
-      // compute local access_points
-      std::vector<PointOnLayerT<int>> access_points;
-      m_design->grid()->computeAccessPoints(nets[i]->pins()[j], access_points);
-      nets[i]->pins()[j]->setPosition(access_points[ap_indices[j]]);
-    }
-    nets[i]->setRoutingTree(tree);
-  }
-
-  return true;
+  return readGuideImpl(guide_file, m_design.get());
 }
 
 bool Context::writeGuide(const char *guide_file) {
   std::ofstream fout(guide_file);
-  for (const auto& net_ptr : m_design->nets()) {
-    sca::Net* net = net_ptr.get();
+  for (int i = 0; i < m_design->numNets(); i++) {
+    sca::Net* net = m_design->net(i);
     fout << net->name() << std::endl;
     if (net->routingTree() == nullptr) {
       fout << "(\n)\n";
@@ -191,7 +91,7 @@ bool Context::writeGuide(const char *guide_file) {
       fout << ")\n";
     }
   }
-  return true;
+  return 0;
 }
 
 int Context::writeSlack(const char *slack_file) {
