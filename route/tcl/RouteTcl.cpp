@@ -83,6 +83,32 @@ static int write_slack_cmd(ClientData, Tcl_Interp *interp, int objc,
   return sca::Context::ctx()->writeSlack(slack_file) ? TCL_OK : TCL_ERROR;
 }
 
+static int set_layer_rc_cmd(ClientData, Tcl_Interp *interp, int objc,
+                          Tcl_Obj *CONST objv[]) {
+  if (objc != 7) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : set_layer_rc_cmd"); 
+    return TCL_ERROR;
+  }
+  // get layer
+  const char *layer = Tcl_GetString(objv[2]);
+  // get resistance
+  double resistance = atof(Tcl_GetString(objv[4]));
+  // get capacitance
+  double capacitance = atof(Tcl_GetString(objv[6]));
+
+  return sca::Context::ctx()->setLayerRc(layer, resistance, capacitance) ? TCL_OK : TCL_ERROR;
+}
+
+static int set_wire_rc_cmd(ClientData, Tcl_Interp *interp, int objc,
+                          Tcl_Obj *CONST objv[]) {
+  if (objc != 4) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : set_wire_rc_cmd"); 
+    return TCL_ERROR;
+  }
+
+  return TCL_OK;
+}
+
 int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "sca::read_lef", read_lef_cmd, nullptr, nullptr);
   Tcl_CreateObjCommand(interp, "sca::read_def", read_def_cmd, nullptr, nullptr);
@@ -101,6 +127,10 @@ int Route_Init(Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "sca::write_slack", write_slack_cmd, nullptr,
                        nullptr);
   Tcl_CreateObjCommand(interp, "sca::link_design", link_design_cmd, nullptr,
+                       nullptr);
+  Tcl_CreateObjCommand(interp, "set_layer_rc", set_layer_rc_cmd, nullptr,
+                       nullptr);
+  Tcl_CreateObjCommand(interp, "set_wire_rc", set_wire_rc_cmd, nullptr,
                        nullptr);
   return TCL_OK;
 }

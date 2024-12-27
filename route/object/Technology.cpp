@@ -1,4 +1,5 @@
 #include "Technology.hpp"
+#include "./util/log.hpp"
 
 namespace sca {
 
@@ -51,14 +52,29 @@ Libcell *Technology::findLibcell(const std::string &libcell_name) const {
 
 double Technology::layerRes(int idx) const {
   Layer *layer = m_layers[idx].get();
-  double res = 1e+6 * layer->sqRes() / layer->wireWidth();
+  auto result = findLayerRC(layer->name());
+  double res;
+  if(result){
+      //exist set_layer_rc 
+    res = result->first * 1e9;
+  }else{
+    res = 1e+6 * layer->sqRes() / layer->wireWidth();
+  }
   return res;
 }
 
 double Technology::layerCap(int idx) const {
   Layer *layer = m_layers[idx].get();
-  double cap =
-      1e-6 * (layer->sqCap() * layer->wireWidth() + layer->edgeCap() * 2.);
+  auto result = findLayerRC(layer->name().c_str());
+  double cap;
+  if(result){
+    //exist set_layer_rc 
+    cap  = result->second * 1e-9;  
+  }
+  else{
+    cap = 
+        1e-6 * (layer->sqCap() * layer->wireWidth() + layer->edgeCap() * 2.);
+  }
   return cap;
 }
 
@@ -66,5 +82,19 @@ double Technology::cutLayerRes(int idx) const {
   CutLayer *cut_layer = m_cut_layers[idx].get();
   return cut_layer->res();
 }
+
+bool Technology::addLayerRC(const std::string& layer_name, double resistance, double capacitance) {
+  auto result = m_layer_rc.insert({layer_name, new std::pair(resistance, capacitance)});
+  if (!result.second) {
+      LOG_ERROR("Error: Layer %s set_layer_rc already exists and was not inserted.");
+      return false; 
+  }
+  return true; 
+}
+
+std::pair<double, double> *Technology::findLayerRC(const std::string& layer_name) const {
+  return findHelper(layer_name, m_layer_rc);
+}
+
 
 }; // namespace sca

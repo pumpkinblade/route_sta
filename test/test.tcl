@@ -57,9 +57,10 @@ read_liberty "./Nangate45/Nangate45_typ.lib"
 sca::read_lef "./Nangate45/Nangate45.lef"
 sca::read_def "./gcd_nangate45_new.def"
 sca::link_design gcd
-# sca::run_cugr2
-# sca::read_guide "./gcd_nangate45_new.guide"
-# sca::write_guide "./gcd_nangate_new-cugr2.guide"
+sca::run_cugr2
+sca::read_guide "./gcd_nangate45_new.guide"
+sca::write_guide "./gcd_nangate_new-cugr2.guide"
+source ./Nangate45/setRC.tcl
 sca::estimate_parasitics
 setup_sta_env
 report_timing

@@ -29,6 +29,8 @@ public:
   int readGuide(const char *guide_file);
   bool writeGuide(const char *guide_file);
   int writeSlack(const char *slack_file);
+  bool setLayerRc(const std::string &layer_name, double res, double cap);
+
 
   int runCugr2();
   int estimateParasitcs();

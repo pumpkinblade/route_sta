@@ -114,6 +114,11 @@ public:
   CutLayer *findCutLayer(const std::string &cut_layer_name) const;
   Libcell *findLibcell(const std::string &libcell_name) const;
 
+  bool addLayerRC(const std::string& layer_name, double resistance, double capacitance);
+  std::pair<double, double> *findLayerRC(const std::string& layer_name) const;
+
+
+
   double layerRes(int idx) const;
   double layerCap(int idx) const;
   double cutLayerRes(int idx) const;
@@ -125,6 +130,7 @@ private:
   // layer
   std::vector<std::unique_ptr<Layer>> m_layers;
   std::unordered_map<std::string, Layer *> m_layer_name_map;
+  std::unordered_map<std::string, std::pair<double, double> *> m_layer_rc; //[0] command set_layer_rc flag,[1] resistance,[2] capacitance
 
   // cut layer
   std::vector<std::unique_ptr<CutLayer>> m_cut_layers;

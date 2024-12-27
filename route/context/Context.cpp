@@ -125,6 +125,10 @@ int Context::runCugr2() {
   globalRouter.route();
   return 0;
 }
+bool Context::setLayerRc(const std::string &layer_name, double res, double cap){
+  return ctx()->technology()->addLayerRC(layer_name, res, cap);
+}
+
 
 int Context::estimateParasitcs() {
   m_parasitics_builder->clearParasitics();
