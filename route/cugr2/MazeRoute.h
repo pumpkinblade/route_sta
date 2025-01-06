@@ -72,7 +72,7 @@ private:
 struct Solution {
   CostT cost;
   int vertex;
-  std::shared_ptr<Solution> prev;
+  std::weak_ptr<Solution> prev;
   Solution(CostT c, int v, const std::shared_ptr<Solution> &p)
       : cost(c), vertex(v), prev(p) {}
 };

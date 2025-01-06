@@ -41,6 +41,14 @@ void PatternRoute::constructSteinerTree() {
 
     const int numBranches = degree + degree - 2;
     vector<sca::PointT<int>> steinerPoints;
+    if (numBranches <= 0) {
+        LOG_WARN("numBranches is invalid! numBranches is %d",numBranches);
+        if(steinerTree==nullptr)
+          LOG_WARN("steinerTree is nullptr!");
+          //Case 3 :Preventing segment fault errors
+          steinerTree = std::make_shared<SteinerTreeNode>(sca::PointT<int>(0,0)); 
+        return;
+    }
     steinerPoints.reserve(numBranches);
     vector<vector<int>> adjacentList(numBranches);
     for (int branchIndex = 0; branchIndex < numBranches; branchIndex++) {

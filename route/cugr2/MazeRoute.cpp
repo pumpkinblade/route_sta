@@ -184,7 +184,7 @@ void MazeRoute::run() {
       for (int edgeIndex = 0; edgeIndex < 3; edgeIndex++) {
         int nextVertex = graph.getNextVertex(solution->vertex, edgeIndex);
         if (nextVertex == -1 ||
-            (solution->prev && nextVertex == solution->prev->vertex))
+            (solution->prev.lock() && nextVertex == solution->prev.lock()->vertex))
           continue;
         CostT nextCost =
             solution->cost + graph.getEdgeCost(solution->vertex, edgeIndex);
@@ -201,8 +201,8 @@ void MazeRoute::run() {
     // Update the cost of the vertices on the path
     std::shared_ptr<Solution> temp = foundSolution;
     while (temp && temp->cost != 0) {
-      updateSolution(std::make_shared<Solution>(0, temp->vertex, temp->prev));
-      temp = temp->prev;
+      updateSolution(std::make_shared<Solution>(0, temp->vertex, temp->prev.lock()));
+      temp = temp->prev.lock();
     }
   }
 
@@ -232,16 +232,16 @@ std::shared_ptr<SteinerTreeNode> MazeRoute::getSteinerTree() const {
         created.emplace(temp->vertex, node);
         if (lastNode)
           node->children.emplace_back(lastNode);
-        if (!temp->prev)
+        if (!temp->prev.lock())
           tree = node;
-        if (!lastNode || !temp->prev) {
+        if (!lastNode || !temp->prev.lock()) {
           // Both the start and the end of the path should contain pins
           int pinIndex = graph.getVertexPin(temp->vertex);
           assert(pinIndex != -1);
           node->fixedLayers = graph.getPseudoPin(pinIndex).second;
         }
         lastNode = node;
-        temp = temp->prev;
+        temp = temp->prev.lock();
       } else {
         if (lastNode)
           it->second->children.emplace_back(lastNode);
