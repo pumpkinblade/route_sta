@@ -21,6 +21,10 @@ struct Parameters {
   double unit_length_wire_cost;
   double unit_via_cost;
   std::vector<double> unit_overflow_costs;
+  
+  /*IrisLin*/
+  std::vector<int> netOrder;
+  /*IrisLin*/
 
   int min_routing_layer;
 

@@ -31,6 +31,9 @@ public:
   int writeSlack(const char *slack_file);
   bool setLayerRc(const std::string &layer_name, double res, double cap);
 
+  /*IrisLin*/
+  std::vector<int> getNetOrder();
+  /*IrisLin*/
 
   int runCugr2();
   int estimateParasitcs();

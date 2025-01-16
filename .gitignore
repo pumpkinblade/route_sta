@@ -4,4 +4,7 @@ build/
 test/results/*
 !test/results/.gitkeep
 ISPD25_benchmarks/*
+ISPD2025_benchmarks/*
+!ISPD25_benchmarks/*.tcl
+!ISPD25_benchmarks/*.dat
 !ISPD25_benchmarks/test.tcl

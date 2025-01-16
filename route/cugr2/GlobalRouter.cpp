@@ -18,6 +18,9 @@ GlobalRouter::GlobalRouter(sca::Design *design, const Parameters &params)
   unit_length_wire_cost = params.unit_length_wire_cost;
   unit_via_cost = params.unit_via_cost;
   unit_overflow_costs = params.unit_overflow_costs;
+  /*IrisLin*/
+  netOrder = params.netOrder;
+  /*IrisLin*/
 }
 
 void GlobalRouter::route() {
@@ -30,9 +33,30 @@ void GlobalRouter::route() {
 
   vector<int> netIndices(m_design->numNets());
   vector<int> netOverflows(m_design->numNets(), 0);
-  for (int i = 0; i < m_design->numNets(); i++) {
-    netIndices[i] = i;
-  }
+
+  /*IrisLin*/
+  // std::ifstream netOrder("sortedNetIndex.txt");
+  // for (int i = 0; i < m_design->numNets(); i++) {
+  //   int ind;
+  //   netOrder >> ind;
+  //   std::cout << ind << std::endl;
+  //   netIndices[i] = ind;
+  // }
+
+  // std::cout << "m_design->numNets()" << m_design->numNets() << std::endl;
+  // for (int i = 0; i < m_design->numNets(); i++) {
+  //   netIndices[i] = i;
+  // }
+  /*============================================or============================================*/
+  netIndices = netOrder;
+
+  // std::ofstream outfile("netIndices.txt");
+  // for (auto ind : netIndices)
+  // {
+  //   outfile << ind << std::endl;
+  // }
+  // outfile.close();
+  /*IrisLin*/
 
   // Stage 1: Pattern routing
   LOG_TRACE("stage 1: pattern routing");

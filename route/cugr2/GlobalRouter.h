@@ -27,6 +27,10 @@ private:
   CostT unit_via_cost;
   std::vector<CostT> unit_overflow_costs;
 
+  /*IrisLin*/
+  std::vector<int> netOrder;
+  /*IrisLin*/
+
   void printStatistics() const;
   void update_nonstack_via_counter(
       unsigned net_idx, const std::vector<std::vector<int>> &via_loc,
