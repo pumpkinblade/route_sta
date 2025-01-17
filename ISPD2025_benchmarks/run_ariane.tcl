@@ -52,7 +52,7 @@ sca::run_cugr2
 # read_sdc ${SDC_FILE}
 #sca::read_guide "./gcd_nangate45_new.guide"
 #sca::write_guide "./gcd_nangate_new-cugr2.guide"
-source ./Nangate45/setRC.tcl
+source ./NanGate45/setRC.tcl
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
 sca::write_slack arianeslackfile2
