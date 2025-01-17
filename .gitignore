@@ -4,4 +4,5 @@ build/
 test/results/*
 !test/results/.gitkeep
 ISPD25_benchmarks/
-ISPD2025_benchmarks/*
+ISPD2025_benchmarks/
+# !/ISPD2025_benchmarks/run_ariane.tcl
