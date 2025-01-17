@@ -23,10 +23,12 @@ foreach lib_file ${LIB_FILES} {
   read_liberty ${lib_file}
 }
 puts "success:readlib"
+
 foreach lef_file ${LEF_FILES} {
   sca::read_lef ${lef_file}
 }
 puts "success:readlef"
+
 sca::read_def ${DEF_FILE}
 puts "success:readdef"
 
@@ -37,6 +39,7 @@ puts "success:readdef"
 # link_design ${DESIGN_NAME}
 sca::link_design ${DESIGN_NAME}
 puts "success:linkdesign"
+
 # setup_sta_env
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
@@ -47,6 +50,9 @@ report_tns
 sca::run_cugr2
 # sca::link_design ${DESIGN_NAME}
 # read_sdc ${SDC_FILE}
+#sca::read_guide "./gcd_nangate45_new.guide"
+#sca::write_guide "./gcd_nangate_new-cugr2.guide"
+source ./Nangate45/setRC.tcl
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
 sca::write_slack arianeslackfile2
