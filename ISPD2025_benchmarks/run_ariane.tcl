@@ -1,11 +1,36 @@
 source lib_setup.tcl
 # source set_design.tcl
-source helper.tcl
+# source helper.tcl
 
 proc setup_sta_env {} {
   create_clock [get_ports clk] -name core_clock -period 0.4850
   set_all_input_output_delays
   set_propagated_clock [all_clocks]
+}
+
+proc load_design {libs lefs design netlist def sdc} {
+  foreach libFile $libs {
+    read_liberty $libFile
+  }
+  puts "success:readlib"
+
+  foreach lef $lefs {
+    sca::read_lef $lef
+  }
+  puts "success:readlef"
+
+  sca::read_def $def
+  puts "success:readdef"
+
+  read_verilog $netlist
+
+  # link_design $design
+  sca::link_design $design
+  
+  #read_spef $spef
+  #read_db $odbf
+  read_sdc $sdc
+  puts "success:readsdc"
 }
 
 ### SET DESIGN ###
@@ -15,32 +40,9 @@ set DEF_FILE "${DESIGN_DIR}/${DESIGN_NAME}/${DESIGN_NAME}.def"
 set NETLIST_FILE "${DESIGN_DIR}/${DESIGN_NAME}/${DESIGN_NAME}.v.gz"
 set SDC_FILE "${DESIGN_DIR}/${DESIGN_NAME}/${DESIGN_NAME}.sdc"
 
-# set LIB_FILES {"./NanGate45/lib/NangateOpenCellLibrary_typical.lib"}
-# set LEF_FILES {"./NanGate45/lef/NangateOpenCellLibrary.tech.lef" "./NanGate45/lef/NangateOpenCellLibrary.macro.mod.lef"}
-# set LEF_FILES {"./NanGate45/lef/NangateOpenCellLibrary.tech.lef"}
+load_design $LIB_FILES $LEF_FILES $DESIGN_NAME $NETLIST_FILE $DEF_FILE $SDC_FILE
+source "./NanGate45/setRC.tcl"
 
-foreach lib_file ${LIB_FILES} {
-  read_liberty ${lib_file}
-}
-puts "success:readlib"
-
-foreach lef_file ${LEF_FILES} {
-  sca::read_lef ${lef_file}
-}
-puts "success:readlef"
-
-sca::read_def ${DEF_FILE}
-puts "success:readdef"
-
-# read_verilog ${NETLIST_FILE}
-# link_design ${DESIGN_NAME}
-
-# irislin
-# link_design ${DESIGN_NAME}
-sca::link_design ${DESIGN_NAME}
-puts "success:linkdesign"
-
-# setup_sta_env
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
 sca::write_slack arianeslackfile1
@@ -52,7 +54,6 @@ sca::run_cugr2
 # read_sdc ${SDC_FILE}
 #sca::read_guide "./gcd_nangate45_new.guide"
 #sca::write_guide "./gcd_nangate_new-cugr2.guide"
-source ./NanGate45/setRC.tcl
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
 sca::write_slack arianeslackfile2
