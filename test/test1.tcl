@@ -24,8 +24,8 @@ proc report_timing {} {
   # report_tns -digits 3
   # report_checks -path_delay min_max -format full_clock_expanded -fields {input_pin slew capacitance} -digits 3
 
-  report_wns
-  report_tns
+  report_wns -digits 8
+  report_tns -digits 8
   report_power
 }
 
@@ -69,6 +69,7 @@ sca::read_def "./gcd_nangate45_new.def"
 sca::link_design gcd
 
 setup_sta_env
+net_sort_enable
 sca::estimate_parasitics
 report_timing
 sca::write_slack slackfile1
