@@ -32,6 +32,7 @@ public:
   bool setLayerRc(const std::string &layer_name, double res, double cap);
 
   /*IrisLin*/
+  int setNetSort();
   std::vector<int> getNetOrder();
   /*IrisLin*/
 
@@ -50,5 +51,6 @@ private:
   std::unique_ptr<Technology> m_tech;
   std::unique_ptr<Design> m_design;
   std::unique_ptr<MakeWireParasitics> m_parasitics_builder;
+  bool netSort = false;
 };
 } // namespace sca

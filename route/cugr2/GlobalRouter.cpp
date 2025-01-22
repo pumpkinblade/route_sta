@@ -6,6 +6,8 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 
+#include <fstream>
+
 namespace cugr2 {
 
 using std::max;
@@ -43,6 +45,7 @@ void GlobalRouter::route() {
   //   netIndices[i] = ind;
   // }
 
+  //dumpcode
   // std::cout << "m_design->numNets()" << m_design->numNets() << std::endl;
   // for (int i = 0; i < m_design->numNets(); i++) {
   //   netIndices[i] = i;
@@ -50,12 +53,12 @@ void GlobalRouter::route() {
   /*============================================or============================================*/
   netIndices = netOrder;
 
-  // std::ofstream outfile("netIndices.txt");
-  // for (auto ind : netIndices)
-  // {
-  //   outfile << ind << std::endl;
-  // }
-  // outfile.close();
+  std::ofstream outfile("netIndices.txt");
+  for (auto ind : netIndices)
+  {
+    outfile << ind << std::endl;
+  }
+  outfile.close();
   /*IrisLin*/
 
   // Stage 1: Pattern routing

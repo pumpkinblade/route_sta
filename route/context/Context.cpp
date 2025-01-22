@@ -19,6 +19,12 @@ Context *Context::ctx() {
 
 Context::Context() = default;
 
+/*irislin*/
+int Context::setNetSort() {
+  netSort = true;
+}
+/*irislin*/
+
 int Context::readLef(const char *lef_file) {
   if (m_tech == nullptr) {
     m_tech = std::make_unique<Technology>();
@@ -112,24 +118,31 @@ int Context::writeSlack(const char *slack_file) {
 
 /*IrisLin*/
 std::vector<int> Context::getNetOrder() {
-  std::vector<std::pair<int,std::pair<Net*, float>>> netsWithInd;
   std::vector<int> netOrder;
-  for (int i = 0; i < m_design->numNets(); i++) {
-    Net *net = m_design->net(i);
-    float slack = m_parasitics_builder->getNetSlack(net);
-    netsWithInd.emplace_back(i, std::make_pair(net, slack));
+  // std::cout << netSort << std::endl;
+  if (!netSort){
+    for (int i = 0; i < m_design->numNets(); i++) {
+      netOrder.emplace_back(i);
+    }
+  } else {
+    std::vector<std::pair<int,std::pair<Net*, float>>> netsWithInd;
+    for (int i = 0; i < m_design->numNets(); i++) {
+      Net *net = m_design->net(i);
+      float slack = m_parasitics_builder->getNetSlack(net);
+      netsWithInd.emplace_back(i, std::make_pair(net, slack));
+    }
+    std::stable_sort(netsWithInd.begin(),
+                    netsWithInd.end(),
+                    [](const auto& end_slack1, const auto& end_slack2) {
+                      return end_slack1.second.second < end_slack2.second.second;
+                    });
+    std::ofstream outfile("aftersort.txt");
+    for (auto netEnh : netsWithInd) {
+      netOrder.emplace_back(netEnh.first);
+      outfile << netEnh.first << " " << netEnh.second.first->name() << " " << std::setprecision(5) << netEnh.second.second << '\n';
+    }
+    outfile.close();
   }
-  std::stable_sort(netsWithInd.begin(),
-                   netsWithInd.end(),
-                   [](const auto& end_slack1, const auto& end_slack2) {
-                     return end_slack1.second.second < end_slack2.second.second;
-                   });
-  std::ofstream outfile("aftersort.txt");
-  for (auto netEnh : netsWithInd) {
-    netOrder.emplace_back(netEnh.first);
-    outfile << netEnh.first << " " << netEnh.second.first->name() << " " << std::setprecision(5) << netEnh.second.second << '\n';
-  }
-  outfile.close();
   return netOrder;
 }
 /*IrisLin*/

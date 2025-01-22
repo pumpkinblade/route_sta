@@ -6,6 +6,18 @@
 
 namespace sca {
 
+/*irislin*/
+static int net_sort_enable_cmd(ClientData, Tcl_Interp *interp, int objc,
+                        Tcl_Obj *CONST objv[]) {
+  if (objc != 1) {
+    Tcl_WrongNumArgs(interp, objc, objv, "Usage : net_sort_enable");
+    return TCL_ERROR;
+  }
+  sca::Context::ctx()->setNetSort();
+  return 0;
+}
+/*irislin*/
+
 static int read_lef_cmd(ClientData, Tcl_Interp *interp, int objc,
                         Tcl_Obj *CONST objv[]) {
   if (objc != 2) {
@@ -110,6 +122,7 @@ static int set_wire_rc_cmd(ClientData, Tcl_Interp *interp, int objc,
 }
 
 int Route_Init(Tcl_Interp *interp) {
+  Tcl_CreateObjCommand(interp, "net_sort_enable", net_sort_enable_cmd, nullptr, nullptr);
   Tcl_CreateObjCommand(interp, "sca::read_lef", read_lef_cmd, nullptr, nullptr);
   Tcl_CreateObjCommand(interp, "sca::read_def", read_def_cmd, nullptr, nullptr);
   Tcl_CreateObjCommand(interp, "sca::link_design", link_design_cmd, nullptr,
