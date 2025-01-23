@@ -18,6 +18,17 @@ void Net::connect(Pin *pin) {
   pin->setNet(this);
 }
 
+Grid *Design::makeGrid() {
+  m_gcs.clear();
+  m_gcs.push_back({LayerDirection::Horizontal, 0, 4200,
+                   1 + (m_die_box.x.high + 2100) / 4200});
+  m_gcs.push_back({LayerDirection::Vertical, 0, 4200,
+                   1 + (m_die_box.y.high + 2100) / 4200});
+
+  m_grid = std::make_unique<Grid>(this);
+  return m_grid.get();
+}
+
 void Design::setDieBox(const BoxT<DBU> &box) {
   m_die_box = box;
   if (m_top_instance) {

@@ -3,8 +3,6 @@ build/
 .vscode/
 test/results/*
 !test/results/.gitkeep
-ISPD25_benchmarks/*
 ISPD2025_benchmarks/*
 !ISPD2025_benchmarks/run_ariane.tcl
 !ISPD2025_benchmarks/*.dat
-!ISPD25_benchmarks/test.tcl

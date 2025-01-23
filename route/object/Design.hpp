@@ -94,7 +94,7 @@ public:
   void setDieBox(const BoxT<DBU> &box);
   void addTrackConfig(const TrackConfig &tc) { m_tcs.push_back(tc); }
   void addGridConfig(const GridConfig &gc) { m_gcs.push_back(gc); }
-  void makeGrid() { m_grid = std::make_unique<Grid>(this); }
+  Grid *makeGrid();
 
   Technology *technology() const { return m_tech; }
   DBU dbu() const { return m_dbu; }
@@ -115,7 +115,6 @@ public:
   int numNets() const { return static_cast<int>(m_nets.size()); }
   Instance *instance(int idx) { return m_instances[idx].get(); }
   Net *net(int idx) { return m_nets[idx].get(); }
-
 
 private:
   Technology *m_tech;
