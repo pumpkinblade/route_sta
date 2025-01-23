@@ -73,6 +73,16 @@ void GlobalRouter::route() {
     gridGraph.commitTree(m_design->net(netIndex)->routingTree());
   }
   netIndices.clear();
+  /*irislin*/
+  // for (auto netIndex : netOrder)
+  // {
+  //   sca::Net *net = m_design->net(netIndex);
+  //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
+  //   if (netOverflow > 0) {
+  //     netIndices.push_back(netIndex);
+  //     netOverflows[netIndex] = netOverflow;
+  //   }
+  // }
   for (int i = 0; i < m_design->numNets(); i++) {
     sca::Net *net = m_design->net(i);
     int netOverflow = gridGraph.checkOverflow(net->routingTree());
@@ -81,6 +91,7 @@ void GlobalRouter::route() {
       netOverflows[i] = netOverflow;
     }
   }
+  /*irislin*/
   LOG_TRACE("stage 1: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
   t1 = eplaseTime() - t;
@@ -105,6 +116,16 @@ void GlobalRouter::route() {
       gridGraph.commitTree(m_design->net(netIndex)->routingTree());
     }
     netIndices.clear();
+    /*irislin*/
+    // for (auto netIndex : netOrder)
+    // {
+    //   sca::Net *net = m_design->net(netIndex);
+    //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
+    //   if (netOverflow > 0) {
+    //     netIndices.push_back(netIndex);
+    //     netOverflows[netIndex] = netOverflow;
+    //   }
+    // }
     for (int i = 0; i < m_design->numNets(); i++) {
       sca::Net *net = m_design->net(i);
       int netOverflow = gridGraph.checkOverflow(net->routingTree());
@@ -113,6 +134,7 @@ void GlobalRouter::route() {
         netOverflows[i] = netOverflow;
       }
     }
+    /*irislin*/
   }
   LOG_TRACE("stage 2: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
