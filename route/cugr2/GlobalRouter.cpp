@@ -28,10 +28,13 @@ void GlobalRouter::route() {
   // std::ofstream  afile;
   // afile.open("time", std::ios::app);
 
-  vector<int> netIndices(m_design->numNets());
+  vector<int> netIndices;
+  netIndices.reserve(m_design->numNets());
   vector<int> netOverflows(m_design->numNets(), 0);
   for (int i = 0; i < m_design->numNets(); i++) {
-    netIndices[i] = i;
+    if (m_design->net(i)->name().find("clk") != std::string::npos)
+      continue;
+    netIndices.push_back(i);
   }
 
   // Stage 1: Pattern routing
@@ -165,8 +168,9 @@ void GlobalRouter::printStatistics() const {
     sca::Net *net = m_design->net(id);
     vector<vector<int>> via_loc;
     if (net->routingTree() == nullptr) {
-      LOG_ERROR("null GRTree net(id = %d)", id);
-      exit(-1);
+      LOG_WARN("null GRTree net `%s`", net->name().c_str());
+      continue;
+      // exit(-1);
     }
     if (net->routingTree()->children.size() == 0) {
       viaCount++;

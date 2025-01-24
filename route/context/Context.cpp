@@ -61,10 +61,12 @@ bool Context::writeGuide(const char *guide_file) {
   std::ofstream fout(guide_file);
   for (int i = 0; i < m_design->numNets(); i++) {
     sca::Net *net = m_design->net(i);
-    fout << net->name() << std::endl;
     if (net->routingTree() == nullptr) {
-      fout << "(\n)\n";
+      // skip
+      // fout << net->name() << std::endl;
+      // fout << "(\n)\n";
     } else if (net->routingTree()->children.size() == 0) {
+      fout << net->name() << std::endl;
       fout << "(\n";
       const auto &tree = net->routingTree();
       PointOnLayerT<int> p = m_design->grid()->gcellToDbu(*tree);
@@ -75,6 +77,7 @@ bool Context::writeGuide(const char *guide_file) {
            << p.y << " " << layer_name_1 << "\n";
       fout << ")\n";
     } else {
+      fout << net->name() << std::endl;
       fout << "(\n";
       GRTreeNode::preorder(
           net->routingTree(), [&](std::shared_ptr<GRTreeNode> node) {
