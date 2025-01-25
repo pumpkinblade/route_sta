@@ -28,14 +28,8 @@ void GlobalRouter::route() {
   // std::ofstream  afile;
   // afile.open("time", std::ios::app);
 
-  vector<int> netIndices;
-  netIndices.reserve(m_design->numNets());
+  vector<int> netIndices = m_design->netIndicesToRoute();
   vector<int> netOverflows(m_design->numNets(), 0);
-  for (int i = 0; i < m_design->numNets(); i++) {
-    if (m_design->net(i)->name().find("clk") != std::string::npos)
-      continue;
-    netIndices.push_back(i);
-  }
 
   // Stage 1: Pattern routing
   LOG_TRACE("stage 1: pattern routing");
@@ -49,7 +43,7 @@ void GlobalRouter::route() {
     gridGraph.commitTree(m_design->net(netIndex)->routingTree());
   }
   netIndices.clear();
-  for (int i = 0; i < m_design->numNets(); i++) {
+  for (int i : m_design->netIndicesToRoute()) {
     sca::Net *net = m_design->net(i);
     int netOverflow = gridGraph.checkOverflow(net->routingTree());
     if (netOverflow > 0) {
@@ -81,7 +75,7 @@ void GlobalRouter::route() {
   //     gridGraph.commitTree(m_design->net(netIndex)->routingTree());
   //   }
   //   netIndices.clear();
-  //   for (int i = 0; i < m_design->numNets(); i++) {
+  //   for (int i : m_design->netIndicesToRoute()) {
   //     sca::Net *net = m_design->net(i);
   //     int netOverflow = gridGraph.checkOverflow(net->routingTree());
   //     if (netOverflow > 0) {
@@ -89,7 +83,6 @@ void GlobalRouter::route() {
   //       netOverflows[i] = netOverflow;
   //     }
   //   }
-  // }
   LOG_TRACE("stage 2: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
   t2 = eplaseTime() - t;
@@ -126,14 +119,14 @@ void GlobalRouter::route() {
   //     grid.step();
   //   }
   //   netIndices.clear();
-  //   for (int i = 0; i < m_design->numNets(); i++) {
-  //     sca::Net *net = m_design->net(i);
-  //     int netOverflow = gridGraph.checkOverflow(net->routingTree());
-  //     if (netOverflow > 0) {
-  //       netIndices.push_back(i);
-  //       netOverflows[i] = netOverflow;
-  //     }
+  // for (int i : m_design->netIndicesToRoute()) {
+  //   sca::Net *net = m_design->net(i);
+  //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
+  //   if (netOverflow > 0) {
+  //     netIndices.push_back(i);
+  //     netOverflows[i] = netOverflow;
   //   }
+  // }
   // }
   LOG_TRACE("stage 3: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());

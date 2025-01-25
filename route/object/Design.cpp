@@ -60,6 +60,21 @@ Net *Design::makeNet(const std::string &net_name) {
   return makeHelper(net_name, m_net_name_map, m_nets, net_name);
 }
 
+const std::vector<int> &Design::makeNetIndicesToRoute() {
+  m_net_indices.clear();
+  for (int i = 0; i < numNets(); i++) {
+    std::string name = net(i)->name();
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    if (name.find("clk") == std::string::npos &&
+        name.find("vdd") == std::string::npos &&
+        name.find("vss") == std::string::npos &&
+        name.find("gnd") == std::string::npos && net(i)->numPins() >= 2) {
+      m_net_indices.push_back(i);
+    }
+  }
+  return m_net_indices;
+}
+
 Instance *Design::findInstance(const std::string &inst_name) const {
   return findHelper(inst_name, m_instance_name_map);
 }

@@ -33,6 +33,7 @@ int Context::readDef(const char *def_file) {
   if (!res) {
     m_design->makeGrid();
   }
+  m_design->makeNetIndicesToRoute();
   return res;
 }
 
@@ -59,7 +60,7 @@ int Context::readGuide(const char *guide_file) {
 
 bool Context::writeGuide(const char *guide_file) {
   std::ofstream fout(guide_file);
-  for (int i = 0; i < m_design->numNets(); i++) {
+  for (int i : m_design->netIndicesToRoute()) {
     sca::Net *net = m_design->net(i);
     if (net->routingTree() == nullptr) {
       // skip
@@ -118,7 +119,7 @@ int Context::writeSlack(const char *slack_file) {
     LOG_ERROR("can not open file %s", slack_file);
     return false;
   }
-  for (int i = 0; i < m_design->numNets(); i++) {
+  for (int i : m_design->netIndicesToRoute()) {
     Net *net = m_design->net(i);
     float slack = m_parasitics_builder->getNetSlack(net);
     fout << net->name() << " " << std::setprecision(5) << slack << '\n';
@@ -150,7 +151,7 @@ bool Context::setLayerRc(const std::string &layer_name, double res,
 
 int Context::estimateParasitcs() {
   m_parasitics_builder->clearParasitics();
-  for (int i = 0; i < m_design->numNets(); i++) {
+  for (int i : m_design->netIndicesToRoute()) {
     m_parasitics_builder->estimateParasitcs(m_design->net(i));
   }
   sta::Sta::sta()->delaysInvalid();

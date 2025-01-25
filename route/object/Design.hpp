@@ -116,6 +116,9 @@ public:
   Instance *instance(int idx) { return m_instances[idx].get(); }
   Net *net(int idx) { return m_nets[idx].get(); }
 
+  const std::vector<int> &makeNetIndicesToRoute();
+  const std::vector<int> &netIndicesToRoute() const { return m_net_indices; }
+
 private:
   Technology *m_tech;
   double m_dbu; // m_dbu * DBU == 1um
@@ -129,6 +132,8 @@ private:
   std::unordered_map<std::string, Instance *> m_instance_name_map;
   std::vector<std::unique_ptr<Net>> m_nets;
   std::unordered_map<std::string, Net *> m_net_name_map;
+
+  std::vector<int> m_net_indices;
 };
 
 } // namespace sca
