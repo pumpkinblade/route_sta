@@ -1,0 +1,44 @@
+OpenSTA 2.6.0 aafee90f8a Copyright (c) 2024, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+success:readlib
+success:readlef
+success:readdef
+[5.038] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:33] create sta top cell
+[5.039] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:48] create sta top inst
+[5.039] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:54] create sta insts
+[5.590] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:80] create sta nets
+[6.136] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:106] acquire arcDelayCalc and parasitics
+success:readsdc
+success:estimate_parasitics
+wns -0.29
+tns -575.34
+[56.644] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:65] stage 1: pattern routing
+[86.333] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:96] stage 1: 21487/138344 nets have overflows
+[86.333] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:102] stage 2: pattern routing with detour
+[121.982] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:140] stage 2: 16252/138344 nets have overflows
+[121.982] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:146] stage 3: maze routing
+[265.106] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:185] stage 3: 0/138344 nets have overflows
+[265.106] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:190] step routed #nets: 138344, 21487, 16252
+[265.106] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:191] step time: 29.885 35.649 143.124
+[265.106] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:196] routing statistics
+Layer = 1, num_overflows = 0, layer_overflows = 16738.156218, overflow_cost = 83690.781092
+Layer = 2, num_overflows = 0, layer_overflows = 12506.784152, overflow_cost = 146224.701853
+Layer = 3, num_overflows = 20, layer_overflows = 38513.040584, overflow_cost = 338789.904773
+Layer = 4, num_overflows = 0, layer_overflows = 81061.584832, overflow_cost = 744097.828933
+Layer = 5, num_overflows = 0, layer_overflows = 34852.874326, overflow_cost = 918362.200564
+Layer = 6, num_overflows = 0, layer_overflows = 431323.352104, overflow_cost = 3074978.961083
+Layer = 7, num_overflows = 0, layer_overflows = 317684.677684, overflow_cost = 4663402.349502
+Layer = 8, num_overflows = 0, layer_overflows = 510794.040794, overflow_cost = 7217372.553471
+Layer = 9, num_overflows = 0, layer_overflows = 553723.128387, overflow_cost = 9985988.195407
+wire cost: 2586789.232084
+via cost: 2312696.000000
+overflow cost: 9985988.195407
+total cost: 14885473.427491
+[266.234] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:305] ===============
+success:estimate_parasitics
+wns -0.36
+tns -844.50
