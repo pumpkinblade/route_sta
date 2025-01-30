@@ -33,7 +33,7 @@ void GlobalRouter::route() {
   // std::ofstream  afile;
   // afile.open("time", std::ios::app);
 
-  vector<int> netIndices(m_design->numNets());
+  vector<int> netIndices = m_design->netIndicesToRoute();
   vector<int> netOverflows(m_design->numNets(), 0);
 
   /*IrisLin*/
@@ -51,7 +51,7 @@ void GlobalRouter::route() {
   //   netIndices[i] = i;
   // }
   /*============================================or============================================*/
-  netIndices = netOrder;
+  //netIndices = netOrder;
 
   std::ofstream outfile("netIndices.txt");
   for (auto ind : netIndices)
@@ -83,7 +83,7 @@ void GlobalRouter::route() {
   //     netOverflows[netIndex] = netOverflow;
   //   }
   // }
-  for (int i = 0; i < m_design->numNets(); i++) {
+  for (int i : m_design->netIndicesToRoute()) {
     sca::Net *net = m_design->net(i);
     int netOverflow = gridGraph.checkOverflow(net->routingTree());
     if (netOverflow > 0) {
@@ -101,42 +101,30 @@ void GlobalRouter::route() {
   // Stage 2: Pattern routing with possible detours
   LOG_TRACE("stage 2: pattern routing with detour");
   n2 = netIndices.size();
-  if (netIndices.size() > 0) {
-    GridGraphView<bool>
-        congestionView; // (2d) direction -> x -> y -> has overflow?
-    gridGraph.extractCongestionView(congestionView);
-    for (const int netIndex : netIndices) {
-      gridGraph.commitTree(m_design->net(netIndex)->routingTree(), true);
-    }
-    for (const int netIndex : netIndices) {
-      PatternRoute patternRoute(m_design->net(netIndex), gridGraph, parameters);
-      patternRoute.constructSteinerTree();
-      patternRoute.constructRoutingDAG();
-      patternRoute.constructDetours(congestionView);
-      patternRoute.run();
-      gridGraph.commitTree(m_design->net(netIndex)->routingTree());
-    }
-    netIndices.clear();
-    // irislin
-    // for (auto netIndex : netOrder)
-    // {
-    //   sca::Net *net = m_design->net(netIndex);
-    //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
-    //   if (netOverflow > 0) {
-    //     netIndices.push_back(netIndex);
-    //     netOverflows[netIndex] = netOverflow;
-    //   }
-    // }
-    for (int i = 0; i < m_design->numNets(); i++) {
-      sca::Net *net = m_design->net(i);
-      int netOverflow = gridGraph.checkOverflow(net->routingTree());
-      if (netOverflow > 0) {
-        netIndices.push_back(i);
-        netOverflows[i] = netOverflow;
-      }
-    }
-    // irislin
-  }
+  // if (netIndices.size() > 0) {
+  //   GridGraphView<bool>
+  //       congestionView; // (2d) direction -> x -> y -> has overflow?
+  //   gridGraph.extractCongestionView(congestionView);
+  //   for (const int netIndex : netIndices) {
+  //     gridGraph.commitTree(m_design->net(netIndex)->routingTree(), true);
+  //   }
+  //   for (const int netIndex : netIndices) {
+  //     PatternRoute patternRoute(m_design->net(netIndex), gridGraph,
+  //     parameters); patternRoute.constructSteinerTree();
+  //     patternRoute.constructRoutingDAG();
+  //     patternRoute.constructDetours(congestionView);
+  //     patternRoute.run();
+  //     gridGraph.commitTree(m_design->net(netIndex)->routingTree());
+  //   }
+  //   netIndices.clear();
+  //   for (int i : m_design->netIndicesToRoute()) {
+  //     sca::Net *net = m_design->net(i);
+  //     int netOverflow = gridGraph.checkOverflow(net->routingTree());
+  //     if (netOverflow > 0) {
+  //       netIndices.push_back(i);
+  //       netOverflows[i] = netOverflow;
+  //     }
+  //   }
   LOG_TRACE("stage 2: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
   t2 = eplaseTime() - t;
@@ -145,43 +133,43 @@ void GlobalRouter::route() {
   // Stage 3: maze routing
   LOG_TRACE("stage 3: maze routing");
   n3 = netIndices.size();
-  if (netIndices.size() > 0) {
-    for (const int netIndex : netIndices) {
-      sca::Net *net = m_design->net(netIndex);
-      gridGraph.commitTree(net->routingTree(), true);
-    }
-    GridGraphView<CostT> wireCostView;
-    gridGraph.extractWireCostView(wireCostView);
-    SparseGrid grid(10, 10, 0, 0);
-    for (const int netIndex : netIndices) {
-      sca::Net *net = m_design->net(netIndex);
-      // gridGraph.commitTree(net.getRoutingTree(), true);
-      // gridGraph.updateWireCostView(wireCostView, net.getRoutingTree());
-      MazeRoute mazeRoute(net, gridGraph, parameters);
-      mazeRoute.constructSparsifiedGraph(wireCostView, grid);
-      mazeRoute.run();
-      std::shared_ptr<SteinerTreeNode> tree = mazeRoute.getSteinerTree();
-      assert(tree != nullptr);
+  // if (netIndices.size() > 0) {
+  //   for (const int netIndex : netIndices) {
+  //     sca::Net *net = m_design->net(netIndex);
+  //     gridGraph.commitTree(net->routingTree(), true);
+  //   }
+  //   GridGraphView<CostT> wireCostView;
+  //   gridGraph.extractWireCostView(wireCostView);
+  //   SparseGrid grid(10, 10, 0, 0);
+  //   for (const int netIndex : netIndices) {
+  //     sca::Net *net = m_design->net(netIndex);
+  //     // gridGraph.commitTree(net.getRoutingTree(), true);
+  //     // gridGraph.updateWireCostView(wireCostView, net.getRoutingTree());
+  //     MazeRoute mazeRoute(net, gridGraph, parameters);
+  //     mazeRoute.constructSparsifiedGraph(wireCostView, grid);
+  //     mazeRoute.run();
+  //     std::shared_ptr<SteinerTreeNode> tree = mazeRoute.getSteinerTree();
+  //     assert(tree != nullptr);
 
-      PatternRoute patternRoute(net, gridGraph, parameters);
-      patternRoute.setSteinerTree(tree);
-      patternRoute.constructRoutingDAG();
-      patternRoute.run();
+  //     PatternRoute patternRoute(net, gridGraph, parameters);
+  //     patternRoute.setSteinerTree(tree);
+  //     patternRoute.constructRoutingDAG();
+  //     patternRoute.run();
 
-      gridGraph.commitTree(net->routingTree());
-      gridGraph.updateWireCostView(wireCostView, net->routingTree());
-      grid.step();
-    }
-    netIndices.clear();
-    for (int i = 0; i < m_design->numNets(); i++) {
-      sca::Net *net = m_design->net(i);
-      int netOverflow = gridGraph.checkOverflow(net->routingTree());
-      if (netOverflow > 0) {
-        netIndices.push_back(i);
-        netOverflows[i] = netOverflow;
-      }
-    }
-  }
+  //     gridGraph.commitTree(net->routingTree());
+  //     gridGraph.updateWireCostView(wireCostView, net->routingTree());
+  //     grid.step();
+  //   }
+  //   netIndices.clear();
+  // for (int i : m_design->netIndicesToRoute()) {
+  //   sca::Net *net = m_design->net(i);
+  //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
+  //   if (netOverflow > 0) {
+  //     netIndices.push_back(i);
+  //     netOverflows[i] = netOverflow;
+  //   }
+  // }
+  // }
   LOG_TRACE("stage 3: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
   t3 = eplaseTime() - t;
@@ -216,8 +204,9 @@ void GlobalRouter::printStatistics() const {
     sca::Net *net = m_design->net(id);
     vector<vector<int>> via_loc;
     if (net->routingTree() == nullptr) {
-      LOG_ERROR("null GRTree net(id = %d)", id);
-      exit(-1);
+      LOG_WARN("null GRTree net `%s`", net->name().c_str());
+      continue;
+      // exit(-1);
     }
     if (net->routingTree()->children.size() == 0) {
       viaCount++;

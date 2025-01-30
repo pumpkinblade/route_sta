@@ -145,7 +145,7 @@ int readDefImpl(const std::string &def_file_path, Design *design) {
   defrSetPinCbk(pinCbk);
   defrSetNetCbk(netCbk);
   defrSetTrackCbk(trackCbk);
-  defrSetGcellGridCbk(gcellGridCbk);
+  // defrSetGcellGridCbk(gcellGridCbk);
   FILE *def_stream = std::fopen(def_file_path.c_str(), "r");
   if (def_stream == nullptr) {
     return 1;

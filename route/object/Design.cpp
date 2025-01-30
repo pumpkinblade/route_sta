@@ -18,6 +18,17 @@ void Net::connect(Pin *pin) {
   pin->setNet(this);
 }
 
+Grid *Design::makeGrid() {
+  m_gcs.clear();
+  m_gcs.push_back({LayerDirection::Horizontal, 0, 4200,
+                   1 + (m_die_box.x.high + 2100) / 4200});
+  m_gcs.push_back({LayerDirection::Vertical, 0, 4200,
+                   1 + (m_die_box.y.high + 2100) / 4200});
+
+  m_grid = std::make_unique<Grid>(this);
+  return m_grid.get();
+}
+
 void Design::setDieBox(const BoxT<DBU> &box) {
   m_die_box = box;
   if (m_top_instance) {
@@ -47,6 +58,21 @@ Instance *Design::makeInstance(const std::string &inst_name, Libcell *libcell) {
 
 Net *Design::makeNet(const std::string &net_name) {
   return makeHelper(net_name, m_net_name_map, m_nets, net_name);
+}
+
+const std::vector<int> &Design::makeNetIndicesToRoute() {
+  m_net_indices.clear();
+  for (int i = 0; i < numNets(); i++) {
+    std::string name = net(i)->name();
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    if (name.find("clk") == std::string::npos &&
+        name.find("vdd") == std::string::npos &&
+        name.find("vss") == std::string::npos &&
+        name.find("gnd") == std::string::npos && net(i)->numPins() >= 2) {
+      m_net_indices.push_back(i);
+    }
+  }
+  return m_net_indices;
 }
 
 Instance *Design::findInstance(const std::string &inst_name) const {

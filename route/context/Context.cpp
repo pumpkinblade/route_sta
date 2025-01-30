@@ -1,11 +1,11 @@
 #include "Context.hpp"
 #include "../cugr2/GlobalRouter.h"
+#include "../object/Route.hpp"
 #include "../parser/parser.hpp"
 #include "../util/log.hpp"
-#include "../object/Route.hpp"
-#include <sta/Network.hh>
 #include <fstream>
 #include <iomanip>
+#include <sta/Network.hh>
 
 namespace sca {
 std::unique_ptr<Context> Context::s_ctx;
@@ -39,6 +39,7 @@ int Context::readDef(const char *def_file) {
   if (!res) {
     m_design->makeGrid();
   }
+  m_design->makeNetIndicesToRoute();
   return res;
 }
 
@@ -65,20 +66,25 @@ int Context::readGuide(const char *guide_file) {
 
 bool Context::writeGuide(const char *guide_file) {
   std::ofstream fout(guide_file);
-  for (int i = 0; i < m_design->numNets(); i++) {
-    sca::Net* net = m_design->net(i);
-    fout << net->name() << std::endl;
+  for (int i : m_design->netIndicesToRoute()) {
+    sca::Net *net = m_design->net(i);
     if (net->routingTree() == nullptr) {
-      fout << "(\n)\n";
+      // skip
+      // fout << net->name() << std::endl;
+      // fout << "(\n)\n";
     } else if (net->routingTree()->children.size() == 0) {
+      fout << net->name() << std::endl;
       fout << "(\n";
       const auto &tree = net->routingTree();
       PointOnLayerT<int> p = m_design->grid()->gcellToDbu(*tree);
-      std::string layer_name = m_tech->layer(p.layerIdx)->name();
-      fout << p.x << " " << p.y << " " << layer_name << " " << p.x << " " << p.y
-           << " " << layer_name << "\n";
+      // TODO: check layer index
+      std::string layer_name_0 = m_tech->layer(p.layerIdx)->name();
+      std::string layer_name_1 = m_tech->layer(p.layerIdx + 1)->name();
+      fout << p.x << " " << p.y << " " << layer_name_0 << " " << p.x << " "
+           << p.y << " " << layer_name_1 << "\n";
       fout << ")\n";
     } else {
+      fout << net->name() << std::endl;
       fout << "(\n";
       GRTreeNode::preorder(
           net->routingTree(), [&](std::shared_ptr<GRTreeNode> node) {
@@ -86,12 +92,25 @@ bool Context::writeGuide(const char *guide_file) {
               auto [p_x, q_x] = std::minmax(node->x, child->x);
               auto [p_y, q_y] = std::minmax(node->y, child->y);
               auto [p_z, q_z] = std::minmax(node->layerIdx, child->layerIdx);
-              PointOnLayerT<int> p = m_design->grid()->gcellToDbu(PointOnLayerT<int>(p_z, p_x, p_y));
-              PointOnLayerT<int> q = m_design->grid()->gcellToDbu(PointOnLayerT<int>(q_z, q_x, q_y));
-              std::string p_layer_name = m_tech->layer(p.layerIdx)->name();
-              std::string q_layer_name = m_tech->layer(q.layerIdx)->name();
-              fout << p.x << " " << p.y << " " << p_layer_name << " " << q.x
-                   << " " << q.y << " " << q_layer_name << "\n";
+              if (p_z != q_z) {
+                PointOnLayerT<int> p = m_design->grid()->gcellToDbu(
+                    PointOnLayerT<int>(p_z, p_x, p_y));
+                for (int z = p_z; z < q_z; z++) {
+                  std::string layer_name_0 = m_tech->layer(z)->name();
+                  std::string layer_name_1 = m_tech->layer(z + 1)->name();
+                  fout << p.x << " " << p.y << " " << layer_name_0 << " " << p.x
+                       << " " << p.y << " " << layer_name_1 << "\n";
+                }
+              } else {
+                PointOnLayerT<int> p = m_design->grid()->gcellToDbu(
+                    PointOnLayerT<int>(p_z, p_x, p_y));
+                PointOnLayerT<int> q = m_design->grid()->gcellToDbu(
+                    PointOnLayerT<int>(q_z, q_x, q_y));
+                std::string p_layer_name = m_tech->layer(p.layerIdx)->name();
+                std::string q_layer_name = m_tech->layer(q.layerIdx)->name();
+                fout << p.x << " " << p.y << " " << p_layer_name << " " << q.x
+                     << " " << q.y << " " << q_layer_name << "\n";
+              }
             }
           });
       fout << ")\n";
@@ -106,7 +125,7 @@ int Context::writeSlack(const char *slack_file) {
     LOG_ERROR("can not open file %s", slack_file);
     return false;
   }
-  for (int i = 0; i < m_design->numNets(); i++) {
+  for (int i : m_design->netIndicesToRoute()) {
     Net *net = m_design->net(i);
     float slack = m_parasitics_builder->getNetSlack(net);
     /*IrisLin*/
@@ -165,14 +184,14 @@ int Context::runCugr2() {
   globalRouter.route();
   return 0;
 }
-bool Context::setLayerRc(const std::string &layer_name, double res, double cap){
+bool Context::setLayerRc(const std::string &layer_name, double res,
+                         double cap) {
   return ctx()->technology()->addLayerRC(layer_name, res, cap);
 }
 
-
 int Context::estimateParasitcs() {
   m_parasitics_builder->clearParasitics();
-  for (int i = 0; i < m_design->numNets(); i++) {
+  for (int i : m_design->netIndicesToRoute()) {
     m_parasitics_builder->estimateParasitcs(m_design->net(i));
   }
   sta::Sta::sta()->delaysInvalid();
