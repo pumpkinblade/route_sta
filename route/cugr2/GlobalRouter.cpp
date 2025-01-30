@@ -33,9 +33,26 @@ void GlobalRouter::route() {
   // std::ofstream  afile;
   // afile.open("time", std::ios::app);
 
-  vector<int> netIndices = m_design->netIndicesToRoute();
+  vector<int> netIndicesToRoute = m_design->netIndicesToRoute();
+  vector<int> netIndicesToRouteSorted;
   vector<int> netOverflows(m_design->numNets(), 0);
 
+  vector<int> netIndices;
+
+  if (std::is_sorted(netOrder.begin(), netOrder.end()))
+  {
+    netIndices = netIndicesToRoute;
+    LOG_INFO("NET SORT DISABLED");
+  } else {
+    for (auto netIndex : netOrder)
+    {
+      if (std::binary_search(netIndicesToRoute.begin(), netIndicesToRoute.end(), netIndex)) {
+        netIndicesToRouteSorted.emplace_back(netIndex);
+      }
+    }
+    netIndices = netIndicesToRouteSorted;
+  }
+  
   /*IrisLin*/
   // std::ifstream netOrder("sortedNetIndex.txt");
   // for (int i = 0; i < m_design->numNets(); i++) {
@@ -51,7 +68,6 @@ void GlobalRouter::route() {
   //   netIndices[i] = i;
   // }
   /*============================================or============================================*/
-  //netIndices = netOrder;
 
   std::ofstream outfile("netIndices.txt");
   for (auto ind : netIndices)
@@ -73,7 +89,7 @@ void GlobalRouter::route() {
     gridGraph.commitTree(m_design->net(netIndex)->routingTree());
   }
   netIndices.clear();
-  /*irislin*/
+  //irislin
   // for (auto netIndex : netOrder)
   // {
   //   sca::Net *net = m_design->net(netIndex);
@@ -83,7 +99,7 @@ void GlobalRouter::route() {
   //     netOverflows[netIndex] = netOverflow;
   //   }
   // }
-  for (int i : m_design->netIndicesToRoute()) {
+  for (int i : netIndicesToRoute) {
     sca::Net *net = m_design->net(i);
     int netOverflow = gridGraph.checkOverflow(net->routingTree());
     if (netOverflow > 0) {
@@ -91,45 +107,47 @@ void GlobalRouter::route() {
       netOverflows[i] = netOverflow;
     }
   }
-  /*irislin*/
+  //irislin
   LOG_TRACE("stage 1: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
   t1 = eplaseTime() - t;
   t = eplaseTime();
 
-/*
+
   // Stage 2: Pattern routing with possible detours
   LOG_TRACE("stage 2: pattern routing with detour");
   n2 = netIndices.size();
-  // if (netIndices.size() > 0) {
-  //   GridGraphView<bool>
-  //       congestionView; // (2d) direction -> x -> y -> has overflow?
-  //   gridGraph.extractCongestionView(congestionView);
-  //   for (const int netIndex : netIndices) {
-  //     gridGraph.commitTree(m_design->net(netIndex)->routingTree(), true);
-  //   }
-  //   for (const int netIndex : netIndices) {
-  //     PatternRoute patternRoute(m_design->net(netIndex), gridGraph,
-  //     parameters); patternRoute.constructSteinerTree();
-  //     patternRoute.constructRoutingDAG();
-  //     patternRoute.constructDetours(congestionView);
-  //     patternRoute.run();
-  //     gridGraph.commitTree(m_design->net(netIndex)->routingTree());
-  //   }
-  //   netIndices.clear();
-  //   for (int i : m_design->netIndicesToRoute()) {
-  //     sca::Net *net = m_design->net(i);
-  //     int netOverflow = gridGraph.checkOverflow(net->routingTree());
-  //     if (netOverflow > 0) {
-  //       netIndices.push_back(i);
-  //       netOverflows[i] = netOverflow;
-  //     }
-  //   }
+  if (netIndices.size() > 0) {
+    GridGraphView<bool>
+        congestionView; // (2d) direction -> x -> y -> has overflow?
+    gridGraph.extractCongestionView(congestionView);
+    for (const int netIndex : netIndices) {
+      gridGraph.commitTree(m_design->net(netIndex)->routingTree(), true);
+    }
+    for (const int netIndex : netIndices) {
+      PatternRoute patternRoute(m_design->net(netIndex), gridGraph,
+      parameters); patternRoute.constructSteinerTree();
+      patternRoute.constructRoutingDAG();
+      patternRoute.constructDetours(congestionView);
+      patternRoute.run();
+      gridGraph.commitTree(m_design->net(netIndex)->routingTree());
+    }
+    netIndices.clear();
+    for (int i : m_design->netIndicesToRoute()) {
+      sca::Net *net = m_design->net(i);
+      int netOverflow = gridGraph.checkOverflow(net->routingTree());
+      if (netOverflow > 0) {
+        netIndices.push_back(i);
+        netOverflows[i] = netOverflow;
+      }
+    }
+  }
   LOG_TRACE("stage 2: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
   t2 = eplaseTime() - t;
   t = eplaseTime();
 
+/*
   // Stage 3: maze routing
   LOG_TRACE("stage 3: maze routing");
   n3 = netIndices.size();

@@ -43,7 +43,7 @@ set SDC_FILE "${DESIGN_DIR}/${DESIGN_NAME}/${DESIGN_NAME}.sdc"
 load_design $LIB_FILES $LEF_FILES $DESIGN_NAME $NETLIST_FILE $DEF_FILE $SDC_FILE
 source "./NanGate45/setRC.tcl"
 
-net_sort_enable
+# net_sort_enable
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
 sca::write_slack arianeslackfile1
