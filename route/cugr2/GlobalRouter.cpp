@@ -97,6 +97,7 @@ void GlobalRouter::route() {
   t1 = eplaseTime() - t;
   t = eplaseTime();
 
+/*
   // Stage 2: Pattern routing with possible detours
   LOG_TRACE("stage 2: pattern routing with detour");
   n2 = netIndices.size();
@@ -116,7 +117,7 @@ void GlobalRouter::route() {
       gridGraph.commitTree(m_design->net(netIndex)->routingTree());
     }
     netIndices.clear();
-    /*irislin*/
+    // irislin
     // for (auto netIndex : netOrder)
     // {
     //   sca::Net *net = m_design->net(netIndex);
@@ -134,7 +135,7 @@ void GlobalRouter::route() {
         netOverflows[i] = netOverflow;
       }
     }
-    /*irislin*/
+    // irislin
   }
   LOG_TRACE("stage 2: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
@@ -185,6 +186,7 @@ void GlobalRouter::route() {
             m_design->numNets());
   t3 = eplaseTime() - t;
   t = eplaseTime();
+*/
 
   LOG_TRACE("step routed #nets: %d, %d, %d", n1, n2, n3);
   LOG_TRACE("step time: %.3f %.3f %.3f", t1, t2, t3);
