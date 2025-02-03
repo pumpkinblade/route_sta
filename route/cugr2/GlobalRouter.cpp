@@ -157,7 +157,7 @@ void GlobalRouter::printStatistics() const {
   flag.assign(gridGraph.getNumLayers(),
               vector<vector<int>>(gridGraph.getSize(0),
                                   vector<int>(gridGraph.getSize(1), -1)));
-  for (int id = 0; id < m_design->numNets(); id++) {
+  for (int id : m_design->netIndicesToRoute()) {
     sca::Net *net = m_design->net(id);
     vector<vector<int>> via_loc;
     if (net->routingTree() == nullptr) {
