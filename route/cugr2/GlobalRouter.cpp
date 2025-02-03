@@ -222,7 +222,7 @@ void GlobalRouter::printStatistics() const {
     sca::Net *net = m_design->net(id);
     vector<vector<int>> via_loc;
     if (net->routingTree() == nullptr) {
-      LOG_WARN("null GRTree net `%s`", net->name().c_str());
+      // LOG_WARN("null GRTree net `%s`", net->name().c_str());
       continue;
       // exit(-1);
     }

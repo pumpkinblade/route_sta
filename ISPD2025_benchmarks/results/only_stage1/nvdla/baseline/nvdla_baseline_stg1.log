@@ -1,0 +1,73 @@
+OpenSTA 2.6.0 aafee90f8a Copyright (c) 2024, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+success:readlib
+success:readlef
+success:readdef
+[8.054] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:33] create sta top cell
+[8.054] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:48] create sta top inst
+[8.055] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:54] create sta insts
+[9.684] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:80] create sta nets
+[10.499] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:106] acquire arcDelayCalc and parasitics
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[0]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[1]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[2]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[3]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[4]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[5]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[6]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[7]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[8]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[9]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[10]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[11]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[12]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[13]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[14]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[15]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[16]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[17]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[18]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[19]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[20]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[21]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[22]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[23]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[24]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[25]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[26]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[27]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[28]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[29]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[30]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[31]' not found.
+success:readsdc
+success:estimate_parasitics
+wns -48.10
+tns -445027.88
+[1;32m[72.834] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:45] NET SORT DISABLED[0m
+[73.145] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:81] stage 1: pattern routing
+[101.915] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:111] stage 1: 39420/242110 nets have overflows
+[101.915] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:197] step routed #nets: 199481, 0, 0
+[101.915] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:198] step time: 29.084 0.000 0.000
+[1;32m[101.915] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:203] routing statistics[0m
+Layer = 1, num_overflows = 84583, layer_overflows = 174842.317084, overflow_cost = 874211.585422
+Layer = 2, num_overflows = 1201, layer_overflows = 9606.676764, overflow_cost = 922244.969243
+Layer = 3, num_overflows = 53317, layer_overflows = 144271.618775, overflow_cost = 1643603.063118
+Layer = 4, num_overflows = 1, layer_overflows = 31785.451890, overflow_cost = 1802530.322568
+Layer = 5, num_overflows = 48773, layer_overflows = 128130.052509, overflow_cost = 2443180.585113
+Layer = 6, num_overflows = 22, layer_overflows = 372419.011847, overflow_cost = 4305275.644346
+Layer = 7, num_overflows = 48075, layer_overflows = 457605.110225, overflow_cost = 6593301.195468
+Layer = 8, num_overflows = 34, layer_overflows = 668938.101712, overflow_cost = 9937991.704029
+Layer = 9, num_overflows = 46614, layer_overflows = 766789.723108, overflow_cost = 13771940.319570
+wire cost: 10584203.181048
+via cost: 4532436.000000
+overflow cost: 13771940.319570
+total cost: 28888579.500618
+[1;32m[103.702] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:313] ===============[0m
+success:estimate_parasitics
+wns -141.37
+tns -852071.88

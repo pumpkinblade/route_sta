@@ -46,7 +46,7 @@ source "./NanGate45/setRC.tcl"
 # net_sort_enable
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
-sca::write_slack bsgslackfile1
+sca::write_slack nvdlaslackfile1
 report_wns
 report_tns
 
@@ -57,7 +57,7 @@ sca::run_cugr2
 #sca::write_guide "./gcd_nangate_new-cugr2.guide"
 sca::estimate_parasitics
 puts "success:estimate_parasitics"
-sca::write_slack bsgslackfile2
+sca::write_slack nvdlaslackfile2
 report_wns
 report_tns
 # report_power
