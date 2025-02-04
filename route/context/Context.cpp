@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <sta/Network.hh>
 
+#include <chrono>
+
 namespace sca {
 std::unique_ptr<Context> Context::s_ctx;
 
@@ -137,6 +139,7 @@ int Context::writeSlack(const char *slack_file) {
 
 /*IrisLin*/
 std::vector<int> Context::getNetOrder() {
+  auto t = std::chrono::high_resolution_clock::now();
   std::vector<int> netOrder;
   // std::cout << netSort << std::endl;
   if (!netSort){
@@ -162,6 +165,9 @@ std::vector<int> Context::getNetOrder() {
     }
     outfile.close();
   }
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - t);
+  std::cout << "TimetoGetNetOrder: " << (duration.count() / 1000) << std::endl;
   return netOrder;
 }
 /*IrisLin*/
