@@ -43,12 +43,12 @@ set SDC_FILE "${DESIGN_DIR}/${DESIGN_NAME}/${DESIGN_NAME}.sdc"
 load_design $LIB_FILES $LEF_FILES $DESIGN_NAME $NETLIST_FILE $DEF_FILE $SDC_FILE
 source "./NanGate45/setRC.tcl"
 
-# net_sort_enable
-sca::estimate_parasitics
-puts "success:estimate_parasitics"
-sca::write_slack nvdlaslackfile1
-report_wns
-report_tns
+net_sort_enable
+# sca::estimate_parasitics
+# puts "success:estimate_parasitics"
+# sca::write_slack nvdlaslackfile1
+# report_wns
+# report_tns
 
 sca::run_cugr2
 # sca::link_design ${DESIGN_NAME}

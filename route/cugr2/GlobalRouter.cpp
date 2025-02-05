@@ -99,14 +99,29 @@ void GlobalRouter::route() {
   //     netOverflows[netIndex] = netOverflow;
   //   }
   // }
-  for (int i : netIndicesToRoute) {
-    sca::Net *net = m_design->net(i);
-    int netOverflow = gridGraph.checkOverflow(net->routingTree());
-    if (netOverflow > 0) {
-      netIndices.push_back(i);
-      netOverflows[i] = netOverflow;
+  int stg2num = 0;
+  for (auto i = netIndicesToRoute.rbegin(); i != netIndicesToRoute.rend(); ++i){
+    if (stg2num <= (netIndicesToRoute.size() * 0.95))
+    {
+      stg2num++;
+      sca::Net *net = m_design->net(*i);
+      int netOverflow = gridGraph.checkOverflow(net->routingTree());
+      if (netOverflow > 0) {
+        netIndices.push_back(*i);
+        netOverflows[*i] = netOverflow;
+      }
+    } else {
+      break;
     }
   }
+  // for (int i : netIndicesToRoute) {
+  //   sca::Net *net = m_design->net(i);
+  //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
+  //   if (netOverflow > 0) {
+  //     netIndices.push_back(i);
+  //     netOverflows[i] = netOverflow;
+  //   }
+  // }
   //irislin
   LOG_TRACE("stage 1: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());
@@ -125,8 +140,8 @@ void GlobalRouter::route() {
       gridGraph.commitTree(m_design->net(netIndex)->routingTree(), true);
     }
     for (const int netIndex : netIndices) {
-      PatternRoute patternRoute(m_design->net(netIndex), gridGraph,
-      parameters); patternRoute.constructSteinerTree();
+      PatternRoute patternRoute(m_design->net(netIndex), gridGraph, parameters);
+      patternRoute.constructSteinerTree();
       patternRoute.constructRoutingDAG();
       patternRoute.constructDetours(congestionView);
       patternRoute.run();

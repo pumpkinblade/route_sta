@@ -3,7 +3,7 @@ build/
 .vscode/
 test/results/*
 !test/results/.gitkeep
-/ISPD25_benchmarks/*
+/ISPD2025_benchmarks_old/*
 /ISPD2025_benchmarks/*
 !/ISPD2025_benchmarks/results
 !/ISPD2025_benchmarks/run*.tcl
