@@ -38,12 +38,14 @@ void GlobalRouter::route() {
   vector<int> netOverflows(m_design->numNets(), 0);
 
   vector<int> netIndices;
+  bool netSort = false;
 
   if (std::is_sorted(netOrder.begin(), netOrder.end()))
   {
     netIndices = netIndicesToRoute;
     LOG_INFO("NET SORT DISABLED");
   } else {
+    netSort = true;
     for (auto netIndex : netOrder)
     {
       if (std::binary_search(netIndicesToRoute.begin(), netIndicesToRoute.end(), netIndex)) {
@@ -52,22 +54,6 @@ void GlobalRouter::route() {
     }
     netIndices = netIndicesToRouteSorted;
   }
-  
-  /*IrisLin*/
-  // std::ifstream netOrder("sortedNetIndex.txt");
-  // for (int i = 0; i < m_design->numNets(); i++) {
-  //   int ind;
-  //   netOrder >> ind;
-  //   std::cout << ind << std::endl;
-  //   netIndices[i] = ind;
-  // }
-
-  //dumpcode
-  // std::cout << "m_design->numNets()" << m_design->numNets() << std::endl;
-  // for (int i = 0; i < m_design->numNets(); i++) {
-  //   netIndices[i] = i;
-  // }
-  /*============================================or============================================*/
 
   std::ofstream outfile("netIndices.txt");
   for (auto ind : netIndices)
@@ -90,30 +76,6 @@ void GlobalRouter::route() {
   }
   netIndices.clear();
   //irislin
-  // for (auto netIndex : netOrder)
-  // {
-  //   sca::Net *net = m_design->net(netIndex);
-  //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
-  //   if (netOverflow > 0) {
-  //     netIndices.push_back(netIndex);
-  //     netOverflows[netIndex] = netOverflow;
-  //   }
-  // }
-  int stg2num = 0;
-  for (auto i = netIndicesToRoute.rbegin(); i != netIndicesToRoute.rend(); ++i){
-    if (stg2num <= (netIndicesToRoute.size() * 0.95))
-    {
-      stg2num++;
-      sca::Net *net = m_design->net(*i);
-      int netOverflow = gridGraph.checkOverflow(net->routingTree());
-      if (netOverflow > 0) {
-        netIndices.push_back(*i);
-        netOverflows[*i] = netOverflow;
-      }
-    } else {
-      break;
-    }
-  }
   // for (int i : netIndicesToRoute) {
   //   sca::Net *net = m_design->net(i);
   //   int netOverflow = gridGraph.checkOverflow(net->routingTree());
@@ -122,6 +84,33 @@ void GlobalRouter::route() {
   //     netOverflows[i] = netOverflow;
   //   }
   // }
+  if (!netSort)
+  {
+    for (int i : netIndicesToRoute) {
+      sca::Net *net = m_design->net(i);
+      int netOverflow = gridGraph.checkOverflow(net->routingTree());
+      if (netOverflow > 0) {
+        netIndices.push_back(i);
+        netOverflows[i] = netOverflow;
+      }
+    }
+  } else {
+    int stg2num = 0;
+    for (auto i = netIndicesToRouteSorted.rbegin(); i != netIndicesToRouteSorted.rend(); ++i){
+      if (stg2num <= (netIndicesToRouteSorted.size() * 0.65))
+      {
+        stg2num++;
+        sca::Net *net = m_design->net(*i);
+        int netOverflow = gridGraph.checkOverflow(net->routingTree());
+        if (netOverflow > 0) {
+          netIndices.push_back(*i);
+          netOverflows[*i] = netOverflow;
+        }
+      } else {
+        break;
+      }
+    }
+  }
   //irislin
   LOG_TRACE("stage 1: %zu/%i nets have overflows", netIndices.size(),
             m_design->numNets());

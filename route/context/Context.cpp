@@ -141,6 +141,7 @@ int Context::writeSlack(const char *slack_file) {
 std::vector<int> Context::getNetOrder() {
   auto t = std::chrono::high_resolution_clock::now();
   std::vector<int> netOrder;
+  int negativeSlackNet = 0;
   // std::cout << netSort << std::endl;
   if (!netSort){
     for (int i = 0; i < m_design->numNets(); i++) {
@@ -152,6 +153,10 @@ std::vector<int> Context::getNetOrder() {
       Net *net = m_design->net(i);
       float slack = m_parasitics_builder->getNetSlack(net);
       netsWithInd.emplace_back(i, std::make_pair(net, slack));
+      if (slack <= 0)
+      {
+        negativeSlackNet ++;
+      }
     }
     std::stable_sort(netsWithInd.begin(),
                     netsWithInd.end(),
@@ -167,6 +172,7 @@ std::vector<int> Context::getNetOrder() {
   }
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - t);
+  std::cout << "negativeSlackNetNumber: " << negativeSlackNet << std::endl;
   std::cout << "TimetoGetNetOrder: " << (duration.count() / 1000) << std::endl;
   return netOrder;
 }

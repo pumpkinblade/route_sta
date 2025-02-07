@@ -1,0 +1,51 @@
+OpenSTA 2.6.0 aafee90f8a Copyright (c) 2024, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+success:readlib
+success:readlef
+success:readdef
+[4.843] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:33] create sta top cell
+[4.844] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:48] create sta top inst
+[4.844] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:54] create sta insts
+[5.362] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:80] create sta nets
+[5.878] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:106] acquire arcDelayCalc and parasitics
+success:readsdc
+TimetoGetNetOrder: 31
+[37.889] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:81] stage 1: pattern routing
+[57.199] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:117] stage 1: 24832/138344 nets have overflows
+[57.199] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:124] stage 2: pattern routing with detour
+[83.822] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:151] stage 2: 19951/138344 nets have overflows
+[83.822] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:203] step routed #nets: 123900, 24832, 0
+[83.822] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:204] step time: 19.533 26.624 0.000
+[1;32m[83.822] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:209] routing statistics[0m
+Layer = 1, num_overflows = 20797, layer_overflows = 40262.663648, overflow_cost = 201313.318240
+Layer = 2, num_overflows = 569, layer_overflows = 5192.045364, overflow_cost = 227273.545062
+Layer = 3, num_overflows = 94, layer_overflows = 18221.250305, overflow_cost = 318379.796587
+Layer = 4, num_overflows = 0, layer_overflows = 14560.254827, overflow_cost = 391181.070725
+Layer = 5, num_overflows = 0, layer_overflows = 14849.719592, overflow_cost = 465429.668686
+Layer = 6, num_overflows = 0, layer_overflows = 171704.099874, overflow_cost = 1323950.168054
+Layer = 7, num_overflows = 0, layer_overflows = 171693.388427, overflow_cost = 2182417.110187
+Layer = 8, num_overflows = 0, layer_overflows = 309079.410219, overflow_cost = 3727814.161282
+Layer = 9, num_overflows = 0, layer_overflows = 317626.464960, overflow_cost = 5315946.486081
+wire cost: 4921390.652766
+via cost: 2947680.000000
+overflow cost: 5315946.486081
+total cost: 13185017.138847
+[1;32m[84.938] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:319] ===============[0m
+success:estimate_parasitics
+wns -0.47
+tns -1200.65
+Group                  Internal  Switching    Leakage      Total
+                          Power      Power      Power      Power (Watts)
+----------------------------------------------------------------
+Sequential             1.00e-01   3.80e-04   1.78e-03   1.03e-01  15.7%
+Combinational          1.13e-03   1.63e-03   2.85e-03   5.61e-03   0.9%
+Clock                  0.00e+00   0.00e+00   0.00e+00   0.00e+00   0.0%
+Macro                  4.86e-01   0.00e+00   5.75e-02   5.43e-01  83.4%
+Pad                    0.00e+00   0.00e+00   0.00e+00   0.00e+00   0.0%
+----------------------------------------------------------------
+Total                  5.88e-01   2.01e-03   6.21e-02   6.52e-01 100.0%
+                          90.2%       0.3%       9.5%

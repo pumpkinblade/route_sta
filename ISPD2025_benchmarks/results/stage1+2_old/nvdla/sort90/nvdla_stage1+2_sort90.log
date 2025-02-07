@@ -1,0 +1,83 @@
+OpenSTA 2.6.0 aafee90f8a Copyright (c) 2024, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+success:readlib
+success:readlef
+success:readdef
+[7.338] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:33] create sta top cell
+[7.338] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:48] create sta top inst
+[7.338] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:54] create sta insts
+[8.128] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:80] create sta nets
+[8.887] TRACE: [/home/iris/work/route_sta/route/timing/MakeWireParasitics.cpp:106] acquire arcDelayCalc and parasitics
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[0]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[1]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[2]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[3]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[4]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[5]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[6]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[7]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[8]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[9]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[10]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[11]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[12]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[13]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[14]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[15]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[16]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[17]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[18]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[19]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[20]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[21]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[22]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[23]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[24]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[25]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[26]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[27]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[28]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[29]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[30]' not found.
+Warning: NV_NVDLA_partition_c.sdc line 10, port 'pwrbus_ram_pd[31]' not found.
+success:readsdc
+TimetoGetNetOrder: 42
+[52.598] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:81] stage 1: pattern routing
+[80.920] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:118] stage 1: 32212/242110 nets have overflows
+[80.920] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:125] stage 2: pattern routing with detour
+[130.430] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:152] stage 2: 19493/242110 nets have overflows
+[130.430] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:204] step routed #nets: 199481, 32212, 0
+[130.430] TRACE: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:205] step time: 28.652 49.510 0.000
+[1;32m[130.430] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:210] routing statistics[0m
+Layer = 1, num_overflows = 13107, layer_overflows = 51579.870166, overflow_cost = 257899.350831
+Layer = 2, num_overflows = 62, layer_overflows = 7248.160411, overflow_cost = 294140.152884
+Layer = 3, num_overflows = 1540, layer_overflows = 46308.927867, overflow_cost = 525684.792218
+Layer = 4, num_overflows = 0, layer_overflows = 31699.467530, overflow_cost = 684182.129867
+Layer = 5, num_overflows = 1360, layer_overflows = 36737.849943, overflow_cost = 867871.379583
+Layer = 6, num_overflows = 0, layer_overflows = 371579.026142, overflow_cost = 2725766.510293
+Layer = 7, num_overflows = 987, layer_overflows = 373883.743905, overflow_cost = 4595185.229817
+Layer = 8, num_overflows = 2, layer_overflows = 668269.883064, overflow_cost = 7936534.645137
+Layer = 9, num_overflows = 880, layer_overflows = 689086.518768, overflow_cost = 11381967.238977
+wire cost: 10636100.833386
+via cost: 4462952.000000
+overflow cost: 11381967.238977
+total cost: 26481020.072363
+[1;32m[132.205] INFO: [/home/iris/work/route_sta/route/cugr2/GlobalRouter.cpp:320] ===============[0m
+success:estimate_parasitics
+wns -141.34
+tns -851764.50
+Group                  Internal  Switching    Leakage      Total
+                          Power      Power      Power      Power (Watts)
+----------------------------------------------------------------
+Sequential             5.78e-01   1.56e-02   4.05e-03   5.98e-01  20.1%
+Combinational          7.01e-02   9.02e-02   4.46e-03   1.65e-01   5.5%
+Clock                  3.75e-05   5.15e-02   6.43e-07   5.15e-02   1.7%
+Macro                  2.05e+00   0.00e+00   1.05e-01   2.16e+00  72.6%
+Pad                    0.00e+00   0.00e+00   0.00e+00   0.00e+00   0.0%
+----------------------------------------------------------------
+Total                  2.70e+00   1.57e-01   1.14e-01   2.97e+00 100.0%
+                          90.9%       5.3%       3.8%
