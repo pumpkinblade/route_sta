@@ -52,6 +52,10 @@ If you install CUDD and LEMON to other directory, use "cmake -B build -DCMAKE_PR
 ```bash
 cd test/
 ../build/route_sta ./test.tcl
+========new=========
+cd ISPD2025_benchmarks
+../build/route_sta ./run_xxx_xxxx.tcl
+
 ```
 
 See also https://github.com/The-OpenROAD-Project/OpenSTA/blob/master/README.md
@@ -74,8 +78,8 @@ sca::read_def
 
 ### Option
 
-| Name          | Description                                         |
-| ------------- | --------------------------------------------------- |
+| Name            | Description                                         |
+| --------------- | --------------------------------------------------- |
 | `lef_file`    | Path to the lef file.                               |
 | `def_file`    | Path to the def file.                               |
 | `use_routing` | Flag to read the routing information from def file. |
@@ -91,15 +95,15 @@ sca::read_guide
 
 ### Option
 
-| Name         | Description             |
-| ------------ | ----------------------- |
+| Name           | Description             |
+| -------------- | ----------------------- |
 | `guide_file` | Path to the guide file. |
 
 ## Write net slack to file
 
 ### Command
 
-The `sca::write_slack` command writes the slack of each net into a file in format "<net-name> <slack>".
+The `sca::write_slack` command writes the slack of each net into a file in format "`<net-name>` `<slack>`".
 
 ```tcl
 sca::write_slack
@@ -108,8 +112,8 @@ sca::write_slack
 
 ### Option
 
-| Name         | Description                                        |
-| ------------ | -------------------------------------------------- |
+| Name           | Description                                        |
+| -------------- | -------------------------------------------------- |
 | `slack_file` | Path to the file that saves the slack information. |
 
 ## Run cugr2
@@ -135,6 +139,6 @@ sca::write_guide
 
 ### Option
 
-| Name         | Description                            |
-| ------------ | -------------------------------------- |
+| Name           | Description                            |
+| -------------- | -------------------------------------- |
 | `guide_file` | Path to the file that saves the guide. |
