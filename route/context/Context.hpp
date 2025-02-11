@@ -32,8 +32,10 @@ public:
   bool setLayerRc(const std::string &layer_name, double res, double cap);
 
   /*IrisLin*/
-  int setNetSort();
+  void setNetSort();
   std::vector<int> getNetOrder();
+  std::vector<int> getNetOrderm();
+  void processNetsRange(int start, int end, std::vector<std::pair<int, std::pair<Net*, float>>>& netsWithInd, std::mutex& mtx);
   /*IrisLin*/
 
   int runCugr2();

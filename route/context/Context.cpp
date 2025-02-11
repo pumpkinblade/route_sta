@@ -8,6 +8,8 @@
 #include <sta/Network.hh>
 
 #include <chrono>
+#include <thread>
+#include <mutex>
 
 namespace sca {
 std::unique_ptr<Context> Context::s_ctx;
@@ -22,7 +24,7 @@ Context *Context::ctx() {
 Context::Context() = default;
 
 /*irislin*/
-int Context::setNetSort() {
+void Context::setNetSort() {
   netSort = true;
 }
 /*irislin*/
@@ -138,10 +140,20 @@ int Context::writeSlack(const char *slack_file) {
 }
 
 /*IrisLin*/
+void Context::processNetsRange(int start, int end, std::vector<std::pair<int, std::pair<Net*, float>>>& netsWithInd, std::mutex& mtx) {
+  for (int i = start; i < end; ++i) {
+      Net* net = m_design->net(i);
+      float slack = m_parasitics_builder->getNetSlack(net);
+
+      // 保护对 netsWithInd 的访问
+      std::lock_guard<std::mutex> lock(mtx);
+      netsWithInd.emplace_back(i, std::make_pair(net, slack));
+  }
+}
+
 std::vector<int> Context::getNetOrder() {
   auto t = std::chrono::high_resolution_clock::now();
   std::vector<int> netOrder;
-  int negativeSlackNet = 0;
   // std::cout << netSort << std::endl;
   if (!netSort){
     for (int i = 0; i < m_design->numNets(); i++) {
@@ -153,10 +165,6 @@ std::vector<int> Context::getNetOrder() {
       Net *net = m_design->net(i);
       float slack = m_parasitics_builder->getNetSlack(net);
       netsWithInd.emplace_back(i, std::make_pair(net, slack));
-      if (slack <= 0)
-      {
-        negativeSlackNet ++;
-      }
     }
     std::stable_sort(netsWithInd.begin(),
                     netsWithInd.end(),
@@ -172,7 +180,48 @@ std::vector<int> Context::getNetOrder() {
   }
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - t);
-  std::cout << "negativeSlackNetNumber: " << negativeSlackNet << std::endl;
+  std::cout << "TimetoGetNetOrder: " << (duration.count() / 1000) << std::endl;
+  return netOrder;
+}
+
+std::vector<int> Context::getNetOrderm(){
+  auto t = std::chrono::high_resolution_clock::now();
+  std::vector<int> netOrder;
+  // std::cout << netSort << std::endl;
+  if (!netSort){
+    for (int i = 0; i < m_design->numNets(); i++) {
+      netOrder.emplace_back(i);
+    }
+  } else {
+    std::vector<std::pair<int,std::pair<Net*, float>>> netsWithInd;
+    std::mutex mtx;
+    int numNets = m_design->numNets();
+    int numThreads = 2;
+    int chunkSize = numNets / numThreads;
+    // 启动 4 个线程，每个线程处理一部分任务
+    std::vector<std::thread> threads;
+    for (int t = 0; t < numThreads; ++t) {
+      int start = t * chunkSize;
+      int end = (t == numThreads - 1) ? numNets-1 : start + chunkSize;
+      threads.emplace_back(&Context::processNetsRange, this, start, end, std::ref(netsWithInd), std::ref(mtx));
+    }
+    for (auto& thread : threads) {
+      thread.join();
+  }
+    std::stable_sort(netsWithInd.begin(),
+                    netsWithInd.end(),
+                    [](const auto& end_slack1, const auto& end_slack2) {
+                      return end_slack1.second.second < end_slack2.second.second;
+                    });
+    std::ofstream outfile("aftersort.txt");
+    for (auto netEnh : netsWithInd) {
+      netOrder.emplace_back(netEnh.first);
+      outfile << netEnh.first << " " << netEnh.second.first->name() << " " << std::setprecision(5) << netEnh.second.second << '\n';
+    }
+    outfile.close();
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - t);
   std::cout << "TimetoGetNetOrder: " << (duration.count() / 1000) << std::endl;
   return netOrder;
 }
