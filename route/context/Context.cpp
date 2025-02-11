@@ -106,7 +106,9 @@ bool Context::writeGuide(const char *guide_file) {
                        << " " << p.y << " " << layer_name_1 << "\n";
                 }
               } else {
-                PointOnLayerT<int> p = m_design->grid()->gcellToDbu(
+                if (!(p_x == q_x && p_y == q_y))
+                {
+                  PointOnLayerT<int> p = m_design->grid()->gcellToDbu(
                     PointOnLayerT<int>(p_z, p_x, p_y));
                 PointOnLayerT<int> q = m_design->grid()->gcellToDbu(
                     PointOnLayerT<int>(q_z, q_x, q_y));
@@ -114,6 +116,7 @@ bool Context::writeGuide(const char *guide_file) {
                 std::string q_layer_name = m_tech->layer(q.layerIdx)->name();
                 fout << p.x << " " << p.y << " " << p_layer_name << " " << q.x
                      << " " << q.y << " " << q_layer_name << "\n";
+                }
               }
             }
           });
